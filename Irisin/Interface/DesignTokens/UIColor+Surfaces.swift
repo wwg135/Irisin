@@ -18,7 +18,7 @@ extension UIColor {
     /// Page background behind cards and lists, a step above
     /// `.panelBackground` in both modes: in the dark, black on a page of its
     /// own and `elevatedGround` in the iPad detail column
-    /// (`LXColumnHostController` elevates it) and in a sheet.
+    /// (`ColumnHostController` elevates it) and in a sheet.
     static let pageBackground = ground(light: UIColor(hex: 0xFAFAFA))
 
     /// A plain page, whose rows and text sit on the ground itself: white in
@@ -39,6 +39,11 @@ extension UIColor {
     /// A photo's ground while it loads, a step off `.plainBackground` in
     /// both modes and at either level.
     static let sheetBackground = UIColor.secondarySystemBackground
+
+    /// The shadow under a bar that floats over a page (`QueueBarView` before
+    /// iOS 26, where glass casts its own): black in both modes, faint enough
+    /// to lift a material capsule off a white list and lost on a dark one.
+    static let floatingShadow = UIColor.black.withAlphaComponent(0.16)
 
     /// A page's ground one level up in the dark, well below the system's
     /// `#1C1C1E`: just off the black sidebar, and a wide step below the

@@ -316,9 +316,9 @@ extension PackageController {
     /// actionable: that flag is what a button hands the view it wraps, so
     /// a label inside one wears the tint. Set here, every label did.
     private func render(_ json: [String: Any], tintColor: UIColor) -> UIView? {
-        let proxy = PackageControllerProxy()
+        let proxy = DepictionPresentationProxy()
         proxy.parentController = self
-        let view = DepictionBaseView.view(
+        let view = DepictionView.view(
             dictionary: json,
             viewController: proxy,
             tintColor: tintColor,
