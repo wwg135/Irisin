@@ -1,22 +1,14 @@
-# Pushes and pull requests: test and measure on the host, and in parallel
-# build and package, keeping the packages for thirty days. Nothing is
-# published from here: a tag publishes, through `release.yml`, the
-# packages of its commit's run, once that run has passed.
-name: CI
+name: Build Irisin
 
 on:
   push:
-    branches:
-      - main-4.0
+    branches: [ "*"]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# A pull request's new push cancels the run of its old one. A push to
-# main-4.0 keeps its own run however soon the next one follows, since a tag
-# on that commit publishes what the run built.
 concurrency:
   group: irisin-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true
@@ -27,9 +19,6 @@ env:
   HOMEBREW_NO_ANALYTICS: "1"
 
 jobs:
-  # Minutes where the build takes the better part of an hour, so a broken
-  # test says so long before the packages would. Host only: `swift build`
-  # has no flat Products directory and needs no case-sensitive volume.
   test:
     name: Host tests and resolver measurements
     runs-on: macos-26
@@ -37,7 +26,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -57,7 +46,7 @@ jobs:
           python3 Scripts/apt-oracle/benchmark.py --probe "$probe_dir/ResolverProbe"
 
       - name: Upload resolver measurements
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: resolver-benchmarks
           path: build/resolver-benchmarks/report.json
@@ -75,7 +64,7 @@ jobs:
           echo "DERIVED_DATA=$RUNNER_TEMP/irisin-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
 
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -111,7 +100,7 @@ jobs:
           cat SHA256SUMS
 
       - name: Upload Debian packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: irisin-${{ github.sha }}
           path: |
