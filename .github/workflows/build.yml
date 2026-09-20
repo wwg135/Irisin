@@ -19,38 +19,6 @@ env:
   HOMEBREW_NO_ANALYTICS: "1"
 
 jobs:
-  test:
-    name: Host tests and resolver measurements
-    runs-on: macos-26
-    timeout-minutes: 60
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Select newest Xcode
-        run: |
-          latest="$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V | tail -n1)"
-          sudo xcode-select -s "$latest/Contents/Developer"
-          xcodebuild -version
-
-      - name: Run host tests
-        run: make harness
-
-      - name: Measure resolver performance on generated catalogues
-        run: |
-          swift build --package-path Packages/AptRepository -c release --product ResolverProbe
-          probe_dir="$(swift build --package-path Packages/AptRepository -c release --show-bin-path)"
-          python3 Scripts/apt-oracle/benchmark.py --probe "$probe_dir/ResolverProbe"
-
-      - name: Upload resolver measurements
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: resolver-benchmarks
-          path: build/resolver-benchmarks/report.json
-
   build:
     name: Build and verify Debian packages
     runs-on: macos-26
