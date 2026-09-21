@@ -43,48 +43,33 @@ jobs:
           python3 - <<'PY'
           import json
 
-          def patch(text):
-              if not isinstance(text, str):
-                  return text
-              text = text.replace('获取安装包', '下载安装包')
-              text = text.replace('软件源', '插件源')
-              text = text.replace('软件包', '插件包')
-              text = text.replace('软件', '插件')
-              return text
+          RULES = [('获取安装包', '下载安装包'), ('软件源', '插件源'),
+                   ('软件包', '插件包'), ('软件', '插件')]
+          def patch(t):
+              for a, b in RULES:
+                  t = t.replace(a, b)
+              return t
 
-          # 1) Localizable.xcstrings（JSON String Catalog）
-          xcstrings = 'Irisin/Resources/Localizable.xcstrings'
-          with open(xcstrings, encoding='utf-8') as f:
-              data = json.load(f)
-
-          changed_xc = 0
-          for val in data['strings'].values():
-              loc = val.get('localizations', {})
-              if 'zh-Hans' not in loc:
-                  continue
-              unit = loc['zh-Hans'].get('stringUnit', {})
-              old = unit.get('value', '')
+          p = 'Irisin/Resources/Localizable.xcstrings'
+          with open(p, encoding='utf-8') as f:
+              d = json.load(f)
+          n = 0
+          for v in d['strings'].values():
+              u = v.get('localizations', {}).get('zh-Hans', {}).get('stringUnit', {})
+              old = u.get('value', '')
               new = patch(old)
               if new != old:
-                  unit['value'] = new
-                  changed_xc += 1
-
-          with open(xcstrings, 'w', encoding='utf-8') as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
+                  u['value'] = new
+                  n += 1
+          with open(p, 'w', encoding='utf-8') as f:
+              json.dump(d, f, ensure_ascii=False, indent=2)
               f.write('\n')
-          print(f'Patched {changed_xc} entries in Localizable.xcstrings')
+          print(f'xcstrings: {n} entries patched')
 
-          # 2) Settings.bundle zh-Hans Root.strings（纯文本，整体替换即可）
-          root_strings = 'Irisin/Resources/Settings.bundle/zh-Hans.lproj/Root.strings'
-          with open(root_strings, encoding='utf-8') as f:
-              old_root = f.read()
-          new_root = patch(old_root)
-          if new_root != old_root:
-              with open(root_strings, 'w', encoding='utf-8') as f:
-                  f.write(new_root)
-              print(f'Patched Root.strings')
-          else:
-              print('Root.strings already up to date')
+          p2 = 'Irisin/Resources/Settings.bundle/zh-Hans.lproj/Root.strings'
+          s = open(p2, encoding='utf-8').read()
+          open(p2, 'w', encoding='utf-8').write(patch(s))
+          print('Root.strings patched' if patch(s) != s else 'Root.strings up-to-date')
           PY
 
       - name: Select newest Xcode
