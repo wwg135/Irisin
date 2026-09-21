@@ -136,8 +136,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p website/debs
+          # 如果想每次只保留最新版本，打开下面这行注释，会清掉旧的 deb
           # rm -f website/debs/*.deb website/debs/SHA256SUMS
-          cp debs/*.deb debs/SHA256SUMS website/debs/
+          cp debs/*.deb website/debs/
           ls -la website/debs/
 
       - name: Commit and push
@@ -154,3 +155,4 @@ jobs:
             git commit -m "chore: update irisin debs (${{ github.sha }})"
             git push
           fi
+#（注：内容由AI生成）
