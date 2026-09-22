@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: irisin-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  group: irisin-${{ github.workflow }}-${github.ref}
   cancel-in-progress: true
 
 env:
@@ -43,7 +43,7 @@ jobs:
           python3 - <<'PY'
           import json
 
-          RULES = [('获取安装包', '下载安装包'), ('软件源', '插件源'),('软件包', '插件包'), ('软件', '插件')]
+          RULES = [('获取安装包', '下载安装包'), ('软件源', '插件源'),('软件包', '插件包'), ('软件', '插件'), ('队列变更', '任务列表')]
           def patch(t):
               for a, b in RULES:
                   t = t.replace(a, b)
