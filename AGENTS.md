@@ -210,6 +210,11 @@ end.
   hand-written, `objectVersion = 77`, file-system-synchronized groups: a file
   under `Irisin/`, `IrisinDaemon/` or `IrisinInstall/` joins its target by
   existing. `make check` fails if Xcode rewrites `objectVersion`.
+- **Everything builds through `Irisin.xcworkspace`.** It holds the project
+  and every package under `Packages/`, and a package there stands in for a
+  remote one of the same name anywhere in the graph. The Makefile passes
+  `-workspace`, and `make check` fails on a package under `Packages/` the
+  workspace does not list. Open the workspace in Xcode, not the project.
 - **No Swift file names the SDK's XPC constant macros.** They come from
   `CIrisinXPC` through `IrisinXPC`; naming them in Swift links
   `libswiftXPC.dylib`, which iOS 15 does not have. `make check` greps for
@@ -279,6 +284,16 @@ end.
   controller; `make check` greps for both.
 - **One asset catalog.** Everything the app draws from a file is in
   `Resources/Assets.xcassets`.
+- **Onboarding's recommended repositories are data, not code.**
+  `Resources/Environments/default-list-<architecture>.plist`, one per
+  bootstrap, and `default-list-managed.plist`, shipped empty for the
+  jailbreak to overwrite: with any entry it is the list, whatever the
+  architecture (`RecommendedRepositories`). No list recommends nothing, and
+  the page has no such section. Each entry is a source line with optional
+  inclusive iOS major bounds, which is how Procursus's per-release suite
+  is picked. `package-deb.sh` keeps the flavor's own list and the managed
+  one and `verify-deb.sh` checks it; `PLIST_FILE_OUTPUT_FORMAT` keeps them
+  XML, so the managed file's instructions reach the device.
 - **Swift 6 language mode, everywhere.** `SWIFT_VERSION = 6.0` on every
   target; concurrency diagnostics are errors, not warnings to be silenced.
   The app defaults to main-actor isolation (`SWIFT_DEFAULT_ACTOR_ISOLATION`).
@@ -306,6 +321,22 @@ end.
   `Select` past the statement that made it. `Repository` keeps only its
   source, Release metadata and `packageCount`; the packages are in the
   database, never on the struct.
+- **The resolver reads the catalogue ahead, and never solves with a stale
+  read.** What a solve does for every request alike (the catalogue
+  decoded, every candidate's relations parsed and matched against every
+  provider) is a `ResolutionPool`, read off the main actor by
+  `PackageQueue`'s preflight once the packages settle (two quiet seconds,
+  no refresh or operation running) and kept on the main actor; a tap
+  solves only its own jobs against it, a tenth of the time. A pool
+  answers only a snapshot of the same database at the same catalogue
+  revision, with the same installed list, origins, architectures and
+  adapted paragraphs (`serves`), and a request for a package it does not
+  hold gets a pool of its own: anything else is read again, so a pool
+  kept too long costs time, never a plan. It is the one place the
+  catalogue stays in memory between solves, and a memory warning drops
+  it. `ResolverProbe bench` and `golden` measure and check it against real
+  repositories (`Scripts/fetch-repository-indexes.py`); every resolver
+  test solves both ways (`resolveBothWays`).
 
 ## Layout
 
@@ -329,7 +360,11 @@ end.
   (`PackageAdapter`, `PackageAdapters`, `BootstrapArchitecture`), each with
   `swift test`.
 - `Packages/<Name>/` — in-house or locally modified libraries
-  (AptRepository, PackageDepiction, ...).
+  (AptRepository, PackageDepiction, ...). Runestone and MarkdownView are
+  vendored and cut down for size, and each README says from what and how:
+  Runestone keeps the bash and JSON grammars alone, and MarkdownView is
+  UIKit only, with no math and no code highlighting. A grammar or a feature
+  put back is paid for in the app's binary.
   Every local package declares iOS 16, the app's own floor and what
   `IcliKit` asks of IrisinKit and everything above it. PackageDepiction's views are
   laid out with SnapKit and configured with Then, like the app: a depiction
@@ -391,6 +426,13 @@ a version bump, like icli.
   The build has no warnings, Debug or Release, and a change keeps it that
   way. `run-xcodebuild.sh` shows each one as a `[!]` line (xcbeautify's
   mark; the raw `warning:` without it).
+  Release is built for size: `Configuration/Size.xcconfig` (`-Osize`,
+  clang `-Oz`) reaches the project through `Release.xcconfig` and the
+  packages through the Makefile's `-xcconfig`, since a package never reads
+  the project's configuration files, and the executables export no symbols
+  (`LD_EXPORT_SYMBOLS = NO`). A product is linked by its narrowest module
+  (`OrderedCollections`, never the `Collections` umbrella): a Swift module
+  linked in stays in the binary whole, used or not.
 - `make deb` / `make deb-all` — roothide and rootless packages, verified.
 - `make install` — update an installation over `iproxy 2333 22`.
 - `Scripts/prune-xcstrings.py Irisin/Resources/Localizable.xcstrings Irisin Packages`

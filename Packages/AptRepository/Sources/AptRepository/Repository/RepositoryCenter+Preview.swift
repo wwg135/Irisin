@@ -21,10 +21,17 @@ public extension RepositoryCenter {
     /// registered. Nil when the address does not answer as a repository.
     func preview(of source: RepositorySource) async -> RepositoryPreview? {
         let repository = Repository(source: source)
+        // no watchdog here to tell slow from dead, and the user is waiting
+        // on this one address: the minute a slow server may need
+        let networking = NetworkingConfiguration(
+            headers: networkingHeaders,
+            timeout: 60,
+            verboseLogging: networkingVerboseLogging
+        )
         return await Self.fetchPreview(
             releaseUrl: repository.metaReleaseUrl,
             avatarUrls: repository.avatarUrls,
-            networking: networkingConfiguration
+            networking: networking
         )
     }
 
@@ -34,8 +41,8 @@ public extension RepositoryCenter {
         networking: NetworkingConfiguration
     ) async -> RepositoryPreview? {
         async let avatar = downloadAvatar(from: avatarUrls, networking: networking)
-        guard let release = await downloadUpdateRelease(withUrl: releaseUrl, networking: networking),
-              let meta = try? DebianControl.parse(release)
+        guard let release = await downloadData(fromUrl: releaseUrl, networking: networking),
+              let meta = ReleaseFile.read(IndexText.decode(release))?.fields
         else {
             return nil
         }

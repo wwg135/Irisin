@@ -8,6 +8,10 @@ SHELL := /bin/bash
 
 ROOT_DIR            := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 PROJECT             := $(ROOT_DIR)/Irisin.xcodeproj
+# Every build goes through the workspace: it holds the project and each
+# package under Packages/, and a package there stands in for a remote one of
+# the same name anywhere in the graph (Runestone, MarkdownView: vendored).
+WORKSPACE           := $(ROOT_DIR)/Irisin.xcworkspace
 SCHEME              := Irisin
 CONFIGURATION       ?= Release
 # Not under /tmp: Xcode spells that /tmp while FileManager resolves it to
@@ -46,6 +50,7 @@ PACKAGE_DIR         := $(ROOT_DIR)/Packages/IrisinKit
 CONFIG_DIR          := $(ROOT_DIR)/Configuration
 VERSION_CONFIG      := $(CONFIG_DIR)/Version.xcconfig
 BASE_CONFIG         := $(CONFIG_DIR)/Base.xcconfig
+SIZE_CONFIG         := $(CONFIG_DIR)/Size.xcconfig
 xcconfig_setting     = $(strip $(shell awk -F= '$$1 ~ /^[[:space:]]*$(1)[[:space:]]*$$/ { gsub(/[[:space:]]/, "", $$2); print $$2; exit }' "$(VERSION_CONFIG)"))
 base_xcconfig_setting = $(strip $(shell awk -F= '$$1 ~ /^[[:space:]]*$(1)[[:space:]]*$$/ { gsub(/[[:space:]]/, "", $$2); print $$2; exit }' "$(BASE_CONFIG)"))
 APP_VERSION         := $(call xcconfig_setting,MARKETING_VERSION)
@@ -74,7 +79,7 @@ LAUNCH_DAEMON       := $(ROOT_DIR)/Packaging/wiki.qaq.irisind.plist
 INFO_PLIST_SUPPLEMENT := $(ROOT_DIR)/Packaging/Irisin-Info.plist
 
 XCODEBUILD_BASE := $(XCODEBUILD_WRAPPER) \
-	-project "$(PROJECT)" \
+	-workspace "$(WORKSPACE)" \
 	-derivedDataPath "$(DERIVED_DATA)" \
 	-skipMacroValidation \
 	-skipPackagePluginValidation \
@@ -136,12 +141,18 @@ check:
 	@command -v ldid >/dev/null || { echo "error: ldid is required" >&2; exit 69; }
 	@command -v dpkg-deb >/dev/null || { echo "error: dpkg-deb is required" >&2; exit 69; }
 	@test -d "$(PROJECT)" || { echo "error: Irisin.xcodeproj is missing" >&2; exit 66; }
+	@test -f "$(WORKSPACE)/contents.xcworkspacedata" || { echo "error: Irisin.xcworkspace is missing" >&2; exit 66; }
+	@for package in "$(ROOT_DIR)"/Packages/*/Package.swift; do \
+		name="$$(basename "$$(dirname "$$package")")"; \
+		grep -qF "location = \"group:Packages/$$name\"" "$(WORKSPACE)/contents.xcworkspacedata" \
+			|| { echo "error: Packages/$$name is not in Irisin.xcworkspace; the build would take the remote package of that name" >&2; exit 65; }; \
+	done
 	@test -f "$(CONTROL_TEMPLATE)" || { echo "error: Debian control template is missing" >&2; exit 66; }
 	@test -f "$(PACKAGE_DIR)/Package.swift" || { echo "error: Packages/IrisinKit/Package.swift is missing" >&2; exit 66; }
 	@for script in "$(DEB_PACKAGER)" "$(DEB_VERIFIER)" "$(VERSION_APPLIER)" "$(XCODEBUILD_WRAPPER)" "$(DEVICE_INSTALLER)"; do \
 		test -x "$$script" || { echo "error: $$script is not executable" >&2; exit 66; }; \
 	done
-	@for xcconfig in Version Base Development Release; do \
+	@for xcconfig in Version Base Size Development Release; do \
 		test -f "$(CONFIG_DIR)/$$xcconfig.xcconfig" || { echo "error: Configuration/$$xcconfig.xcconfig is missing" >&2; exit 66; }; \
 	done
 	@[[ "$(APP_VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "error: MARKETING_VERSION must look like 4.0.0, got '$(APP_VERSION)'" >&2; exit 65; }
@@ -264,6 +275,7 @@ compile: check
 _build-ios:
 	@echo "==> build $(BUILD_NUMBER)"
 	XCBUILD_LABEL=build-ios $(XCODEBUILD) \
+		$(if $(filter Release,$(CONFIGURATION)),-xcconfig "$(SIZE_CONFIG)") \
 		-configuration "$(CONFIGURATION)" \
 		-scheme "$(SCHEME)" \
 		-destination "generic/platform=iOS" \

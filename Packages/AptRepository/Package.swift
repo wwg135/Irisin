@@ -15,7 +15,7 @@ let package = Package(
         .executable(name: "NativeInstallerProbe", targets: ["NativeInstallerProbe"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/libsolv.xcframework", exact: "0.1.0"),
+        .package(url: "https://github.com/Lakr233/libsolv.xcframework", exact: "0.1.1"),
         .package(url: "https://github.com/Lakr233/libarchive.xcframework.git", exact: "0.1.1"),
         .package(path: "../IrisinKit"),
         // Prebuilt WCDB (sqlite + sqlcipher + the C++ core in one dynamic
@@ -56,7 +56,13 @@ let package = Package(
                 .product(name: "IrisinProtocol", package: "IrisinKit"),
             ]
         ),
-        .executableTarget(name: "ResolverProbe", dependencies: ["AptResolver"], path: "Tools/ResolverProbe"),
+        // the catalogue benchmark solves with the shipped adapters' preview,
+        // as the app does
+        .executableTarget(
+            name: "ResolverProbe",
+            dependencies: ["AptResolver", .product(name: "IrisinAdapter", package: "IrisinKit")],
+            path: "Tools/ResolverProbe"
+        ),
         .executableTarget(
             name: "NativeInstallerProbe",
             dependencies: [
@@ -69,8 +75,14 @@ let package = Package(
         .testTarget(
             name: "AptRepositoryTests",
             // the adapter only for `AdapterConformanceTests`, which needs both
-            // halves: a package prepared here, then adapted there
-            dependencies: ["AptRepository", .product(name: "IrisinAdapter", package: "IrisinKit")],
+            // halves: a package prepared here, then adapted there; the
+            // resolver for `ResolutionPoolDatabaseTests`, a pool read from a
+            // database and the database written under it
+            dependencies: [
+                "AptRepository",
+                "AptResolver",
+                .product(name: "IrisinAdapter", package: "IrisinKit"),
+            ],
             // a Debian machine's dpkg status file and a version list sorted
             // by apt itself, for the parser and the comparison
             resources: [.copy("Fixtures")]
