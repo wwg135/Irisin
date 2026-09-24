@@ -1,5 +1,6 @@
 @testable import AptRepository
 import Foundation
+import WCDBSwift
 import XCTest
 
 /// A synthetic catalogue in a throwaway database, asked everything the
@@ -78,6 +79,34 @@ final class AptDatabaseTests: XCTestCase {
         XCTAssertEqual(index.obtainPackage(with: "com.example.only-b", in: Self.repoB)?.latestVersion, "0.1")
         XCTAssertNil(index.obtainPackage(with: "com.example.only-b", in: Self.repoA))
         XCTAssertEqual(index.obtainAllPackageIdentity().count, 304)
+    }
+
+    /// the batch a list asks for: one repository's packages among the
+    /// identities, nothing another repository offers
+    func testPackagesByIdentities() {
+        seed()
+        let found = db.packages(identities: ["com.example.shared", "com.example.only-b", "com.example.none"], in: Self.repoB)
+        XCTAssertEqual(Set(found.map(\.identity)), ["com.example.shared", "com.example.only-b"])
+        XCTAssertEqual(found.first { $0.identity == "com.example.shared" }?.latestVersion, "1.1")
+        XCTAssertEqual(db.packages(identities: ["com.example.only-b"], in: Self.repoA), [])
+        XCTAssertEqual(db.packages(identities: [], in: Self.repoA), [])
+    }
+
+    /// the installed side answered from memory is the database's answer
+    func testInstalledSnapshotAnswersAsTheDatabase() {
+        seed()
+        var held: PackageIndex = index
+        held.installedSnapshot = InstalledSnapshot(reading: db)
+        XCTAssertEqual(held.obtainInstalledPackageList(), index.obtainInstalledPackageList().sorted { $0.identity < $1.identity })
+        for identity in ["com.example.shared", "com.example.filler1", "com.example.only-b"] {
+            XCTAssertEqual(
+                held.obtainPackageInstallationInfo(with: identity)?.representObject,
+                index.obtainPackageInstallationInfo(with: identity)?.representObject,
+                identity
+            )
+            XCTAssertEqual(held.obtainInstallOrigin(of: identity), index.obtainInstallOrigin(of: identity), identity)
+        }
+        XCTAssertEqual(db.installedVersions(), ["com.example.shared": "1.0", "com.example.filler1": "1.1", "firmware": "16.0"])
     }
 
     func testRepositoryListingAndSections() {
@@ -199,6 +228,35 @@ final class AptDatabaseTests: XCTestCase {
         XCTAssertEqual(index.obtainPackageList(in: Self.repoA).count, 0)
         XCTAssertEqual(index.obtainVirtualPackageReference(withIdentity: "virtual-one"), [])
         XCTAssertEqual(index.search("Filler").count, 0)
+    }
+
+    /// Package rows written before they kept their search rowid: a refresh
+    /// of their repository still drops its search rows, and no other's, and
+    /// the rows it writes keep theirs.
+    func testSearchRowsWrittenBeforeTheirRowidWasKept() throws {
+        let path = TestEnvironment.root.appendingPathComponent("\(UUID().uuidString).db")
+        db = AptDatabase(at: path)
+        index = PackageIndex(db: db)
+        seed()
+        try Database(at: path).exec(
+            StatementUpdate()
+                .update(table: AptDatabase.Table.package)
+                .set(PackageRow.Properties.searchRowid)
+                .to(LiteralValue(nil))
+        )
+
+        db.replacePackages(of: Self.repoA, with: [
+            "com.example.fresh": package("com.example.fresh", "1", repo: Self.repoA, ["name": "Fresh"]),
+        ])
+        XCTAssertEqual(index.search("Filler").count, 0)
+        XCTAssertEqual(index.search("Fresh").map(\.identity), ["com.example.fresh"])
+        XCTAssertEqual(index.search("Only B").map(\.identity), ["com.example.only-b"])
+
+        db.deletePackages(of: Self.repoA)
+        XCTAssertEqual(index.search("Fresh").count, 0)
+        XCTAssertEqual(index.search("Shared Thing").map(\.repository), [Self.repoB])
+        db.deletePackages(of: Self.repoB)
+        XCTAssertEqual(index.search("Shared Thing").count, 0)
     }
 
     func testSearch() {
