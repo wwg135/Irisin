@@ -20,7 +20,10 @@ struct RefreshRound {
     /// repositories are not asked
     var unreachableHosts: Set<String> = []
     var results: [URL: (result: Result, duration: TimeInterval)] = [:]
-    /// what the dispatch order was last logged for
+    /// the waiting updates in the order they start, as last worked out
+    var order: [URL] = []
+    /// what `order` was worked out for, less those finished or deleted
+    /// since: asked for again, one of them is ordered again
     var ordered: Set<URL> = []
 }
 
@@ -37,7 +40,7 @@ extension RepositoryCenter {
         // progress, the first to finish would call the repository idle,
         // and the older fetch could land its rows last. A request for
         // one in flight (deleted and added again, say) waits its turn.
-        let flights = currentlyInUpdate.subtracting(givenUpUpdates).compactMap { url in
+        let flights = currentlyInUpdate.subtracting(givenUpUpdates).subtracting(deletedUpdates).compactMap { url in
             updateStarted[url].map {
                 UpdateSchedule.Flight(url: url, started: $0, lastActivity: lastActivity[url] ?? $0)
             }
@@ -79,16 +82,10 @@ extension RepositoryCenter {
         // ordered only with a slot to fill: the reports are decoded for it,
         // and an import calls this once per repository it adds
         guard decision.slots > 0, !waiting.isEmpty else { return }
-        let order = UpdateSchedule.order(waiting, reports: waiting.reduce(into: [:]) { reports, url in
-            reports[url] = repositories[url]?.refreshReport
-        })
         if refreshRound == nil {
             refreshRound = RefreshRound(started: now)
         }
-        if let round = refreshRound, !waiting.isSubset(of: round.ordered) {
-            refreshRound?.ordered.formUnion(waiting)
-            aptLog(self, "update dispatch order: \(describeOrder(order))", level: .verbose)
-        }
+        let order = dispatchOrder(of: waiting)
 
         // started after the loop: finishing one starts the next, and the
         // queue has to be what this decision left before that happens
@@ -121,6 +118,24 @@ extension RepositoryCenter {
         }
     }
 
+    /// The waiting updates in `UpdateSchedule`'s order, worked out again only
+    /// for one the round has not ordered. A waiting repository's report
+    /// changes only when it is refreshed; a round of a hundred
+    /// repositories used to decode every waiting report each time one of
+    /// them finished.
+    private func dispatchOrder(of waiting: Set<URL>) -> [URL] {
+        if let round = refreshRound, waiting.isSubset(of: round.ordered) {
+            return round.order.filter(waiting.contains)
+        }
+        let order = UpdateSchedule.order(waiting, reports: waiting.reduce(into: [:]) { reports, url in
+            reports[url] = repositories[url]?.refreshReport
+        })
+        refreshRound?.order = order
+        refreshRound?.ordered = waiting
+        aptLog(self, "update dispatch order: \(describeOrder(order))", level: .verbose)
+        return order
+    }
+
     /// Puts one update in flight.
     private func start(_ request: UpdateRequest, now: Date) {
         let url = request.url
@@ -131,8 +146,13 @@ extension RepositoryCenter {
         advanceUpdate(of: url)
         let db = AptDatabase.shared
         updateTasks[url] = Task.detached(priority: .utility) {
-            let outcome = await Self.performUpdate(request) { units, absolute in
+            var outcome = await Self.performUpdate(request) { units, absolute in
                 await self.advanceUpdate(of: url, by: units, to: absolute)
+            }
+            // given up or deleted: whatever arrived anyway is not written,
+            // and the packages that are there stay
+            if Task.isCancelled {
+                outcome.packages = nil
             }
             // the heavy write, still off the main actor and still progress
             // to the watchdog; an update that read nothing leaves the rows
@@ -170,7 +190,7 @@ extension RepositoryCenter {
     /// The server said something to an update: it is moving, and one that
     /// was stalled takes its slot back.
     func noteActivity(of url: URL) {
-        guard currentlyInUpdate.contains(url), !givenUpUpdates.contains(url) else { return }
+        guard currentlyInUpdate.contains(url), !givenUpUpdates.contains(url), !deletedUpdates.contains(url) else { return }
         let now = Date()
         if stalledUpdates.remove(url) != nil {
             let idle = now.timeIntervalSince(lastActivity[url] ?? now)
@@ -179,8 +199,7 @@ extension RepositoryCenter {
         lastActivity[url] = now
     }
 
-    /// Notes how a finished update went for the round's summary, and logs
-    /// the summary once the queue is empty.
+    /// Notes how a finished update went for the round's summary.
     func recordInRound(_ outcome: UpdateOutcome, givenUp: Bool) {
         let url = outcome.url
         if outcome.hostUnreachable, let host = url.host {
@@ -196,7 +215,10 @@ extension RepositoryCenter {
             .failed
         }
         refreshRound?.results[url] = (result, outcome.report?.duration ?? 0)
+    }
 
+    /// Logs the round's summary once nothing is pending or in flight.
+    func closeRoundIfDone() {
         guard pendingUpdateRequest.isEmpty, currentlyInUpdate.isEmpty, let round = refreshRound else { return }
         refreshRound = nil
         let results = round.results.values

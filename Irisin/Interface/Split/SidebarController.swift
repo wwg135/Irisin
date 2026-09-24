@@ -36,6 +36,15 @@ class SidebarController: UIViewController {
 
     private let refreshControl = SettlingRefreshControl()
 
+    /// The header's count: a label of its own, since the broken ones are
+    /// in red beside the total.
+    private let countLabel = UILabel().then {
+        $0.font = UIFont.body.monospacedDigitFont
+        // the grey of the header's own title
+        $0.textColor = .secondaryLabel
+        $0.isUserInteractionEnabled = false
+    }
+
     /// The repositories are an inset grouped list. The cards are not a list
     /// row, whose group corners would clip theirs, but take the list's margins.
     private lazy var collectionView = UICollectionView(
@@ -142,10 +151,15 @@ class SidebarController: UIViewController {
         dataSource.apply(snapshot, animatingDifferences: false)
         rebuild(animated: false)
 
-        // a refresh changes the package count in the footer
-        Publishers.MergeMany([RepositoryCenter.registrationUpdate, RepositoryCenter.metadataUpdate].map {
+        // a refresh changes the package count in the footer and the queue in the header
+        Publishers.MergeMany([
+            RepositoryCenter.registrationUpdate,
+            RepositoryCenter.metadataUpdate,
+            .RepositoryQueueChanged,
+        ].map {
             NotificationCenter.default.publisher(for: $0)
         })
+        .filter { !$0.isRepositoryProgress }
         .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
         .sink { [weak self] _ in self?.rebuild(animated: true) }
         .store(in: &subscriptions)
@@ -168,14 +182,20 @@ class SidebarController: UIViewController {
         let animated = animated && hasListedRepositories
         hasListedRepositories = true
         let urls = RepositoryCenter.default.obtainRepositoryUrls(sortedByName: true).uniqued()
+        let rows = urls.isEmpty ? [Item.none] : urls.map(Item.repository)
         let previous = dataSource.snapshot(for: .repositories)
-        var outline = NSDiffableDataSourceSectionSnapshot<Item>()
-        outline.append([.header])
-        outline.append(urls.isEmpty ? [.none] : urls.map(Item.repository), to: .header)
-        if !previous.contains(.header) || previous.isExpanded(.header) {
-            outline.expand([.header])
+        // a refresh moves the header's count once a second and the list not
+        // at all: the same list is not diffed again, and the header stays as
+        // the user left it
+        if previous.items != [.header] + rows {
+            var outline = NSDiffableDataSourceSectionSnapshot<Item>()
+            outline.append([.header])
+            outline.append(rows, to: .header)
+            if !previous.contains(.header) || previous.isExpanded(.header) {
+                outline.expand([.header])
+            }
+            dataSource.apply(outline, to: .repositories, animatingDifferences: animated)
         }
-        dataSource.apply(outline, to: .repositories, animatingDifferences: animated)
         if let indexPath = dataSource.indexPath(for: .header),
            let cell = collectionView.cellForItem(at: indexPath) as? UICollectionViewListCell
         {
@@ -188,8 +208,33 @@ class SidebarController: UIViewController {
         var content = UIListContentConfiguration.sidebarHeader()
         content.text = String(localized: "Repositories")
         cell.contentConfiguration = content
+        // while a refresh runs, how far it has come; after it, the whole
+        // list and, in red, the repositories left with no packages
+        let center = RepositoryCenter.default
+        let total = center.obtainRepositoryCount()
+        let remain = center.obtainUpdateRemain()
+        let count = NSMutableAttributedString(string: remain > 0 ? "\(total - remain)/\(total)" : String(total))
+        var spoken = count.string
+        if remain == 0 {
+            let broken = center.obtainRepositoryUrls().filter { center.refreshHealth(withUrl: $0) == .failed }.count
+            if broken > 0 {
+                count.append(NSAttributedString(
+                    string: " (\(broken))",
+                    attributes: [.foregroundColor: UIColor.repositoryFailed]
+                ))
+                spoken += ", \(broken) " + String(localized: "Unavailable")
+            }
+        }
+        countLabel.attributedText = count
+        countLabel.sizeToFit()
+        // drawn, not read: the header says the count as its value
+        cell.accessibilityValue = spoken
         cell.accessories = [
-            .label(text: String(RepositoryCenter.default.obtainRepositoryCount())),
+            .customView(configuration: .init(
+                customView: countLabel,
+                placement: .trailing(displayed: .always),
+                reservedLayoutWidth: .actual
+            )),
             .outlineDisclosure(options: .init(style: .header)),
         ]
     }
