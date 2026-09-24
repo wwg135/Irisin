@@ -180,6 +180,9 @@ class PackageController: UIViewController {
     /// measuring once more would only have it ask again, for ever.
     private var heightsAskedFor: [Row: CGFloat] = [:]
 
+    /// The rows that asked since the rows were last measured.
+    private var rowsAskingForHeight: Set<Row> = []
+
     /// A view outgrew its row or fell short of it: the rows are measured
     /// again, once for however many said so in this pass, and in place, as
     /// the scroll view this page used to be would have followed.
@@ -187,11 +190,25 @@ class PackageController: UIViewController {
         let height = height.rounded()
         guard heightsAskedFor[row] != height else { return }
         heightsAskedFor[row] = height
+        rowsAskingForHeight.insert(row)
         guard !rowHeightsAreStale else { return }
         rowHeightsAreStale = true
         Task { [weak self] in
             guard let self else { return }
             rowHeightsAreStale = false
+            let asking = rowsAskingForHeight
+            rowsAskingForHeight = []
+            // A cell is laid out at the table's estimate for a moment before
+            // the table sizes it, and says it does not fit. A row that fits
+            // by now asked for nothing: measuring every row again for it
+            // is a pass that changes nothing.
+            let stillWrong = tableView.visibleCells.contains {
+                ($0 as? PackageRowCell)?.heightMismatch != nil
+            }
+            guard stillWrong else {
+                asking.forEach { heightsAskedFor[$0] = nil }
+                return
+            }
             UIView.performWithoutAnimation {
                 self.measureRows(animated: false)
             }
@@ -371,9 +388,18 @@ class PackageController: UIViewController {
         {
             packageObject = fresh
         }
-        // settled before the button animates: a page whose first layout
-        // happens inside an animation block slides every view in from zero
-        UIView.performWithoutAnimation { view.layoutIfNeeded() }
+    }
+
+    /// Settled before the button animates: a page whose first layout
+    /// happens inside an animation block slides every view in from zero.
+    /// Not before the page is in the window, whose sizes the table lays
+    /// out against.
+    override func viewIsAppearing(_ animated: Bool) {
+        super.viewIsAppearing(animated)
+        UIView.performWithoutAnimation {
+            view.layoutIfNeeded()
+            listUpdates.applyPending()
+        }
         bannerPackageView.updateButton()
     }
 
@@ -397,17 +423,25 @@ class PackageController: UIViewController {
     /// The banner height the constraints were last set to.
     private var appliedBannerHeight: CGFloat?
 
+    /// The banner's height waits for the page to be in a window.
+    private let listUpdates = WindowedListUpdates()
+
     /// Brings the banner to its preferred height: at once before the page
-    /// shows, in an animation after.
+    /// shows, in an animation after, and when it next appears for a photo
+    /// that arrived while another page covered it.
     private func resizeBanner() {
-        updatePreferredImageHeight()
-        guard preferredBannerHeight != appliedBannerHeight else {
-            return
+        listUpdates.apply("banner", to: tableView, animated: hasAppeared) { [weak self] animated in
+            self?.applyBannerHeight(animated: animated)
         }
+    }
+
+    private func applyBannerHeight(animated: Bool) {
+        updatePreferredImageHeight()
+        guard preferredBannerHeight != appliedBannerHeight else { return }
         appliedBannerHeight = preferredBannerHeight
         artworkHeight?.update(offset: preferredBannerHeight)
         heightsAskedFor[.artwork] = nil
-        guard hasAppeared else {
+        guard animated else {
             UIView.performWithoutAnimation {
                 measureRows(animated: false)
                 tableView.layoutIfNeeded()
