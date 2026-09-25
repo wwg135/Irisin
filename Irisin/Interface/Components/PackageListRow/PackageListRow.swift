@@ -23,6 +23,10 @@ class PackageListRow: UIView {
         }
     }
 
+    /// Whether the version line says where the package came from: the
+    /// repository it was installed from, or External. The Installed page's.
+    var showsInstallOrigin = false
+
     let contentView = UIView()
 
     let avatar = UIImageView().then {
@@ -233,6 +237,15 @@ class PackageListRow: UIView {
     func loadValue(package row: Package) {
         let package = PackageCenter.default.obtainDescription(of: row)
         guard row != represent || package != described else {
+            // the origin's name is the repository's, not the package's: one
+            // renamed, deleted or read since the last draw shows here
+            if showsInstallOrigin {
+                let origin = versionAndOrigin(of: package)
+                if subtitle.text != origin {
+                    subtitle.text = origin
+                    updateAccessibilityLabel()
+                }
+            }
             updateIndicator()
             return
         }
@@ -249,11 +262,23 @@ class PackageListRow: UIView {
         }
         title.text = PackageCenter.default.name(of: package)
 
-        subtitle.text = package.latestVersion
+        subtitle.text = showsInstallOrigin ? versionAndOrigin(of: package) : package.latestVersion
         describe.text = PackageCenter.default.description(of: package)
         updateAccessibilityLabel()
 
         updateIndicator()
+    }
+
+    /// `1.2 @ Procursus`: a dpkg row is described by its install origin,
+    /// which carries the repository; one with none, or whose repository is
+    /// gone, came from outside Irisin as far as the row can say. Looked up
+    /// quietly: a deleted repository is an expected miss, not a log line.
+    private func versionAndOrigin(of package: Package) -> String {
+        let origin = package.repoRef
+            .flatMap { RepositoryCenter.default.repositories[$0] }
+            .map(\.nickName)
+            ?? String(localized: "External")
+        return [package.latestVersion, origin].compactMap(\.self).joined(separator: " @ ")
     }
 
     /// What the list wants in the corner regardless of the installed record:
