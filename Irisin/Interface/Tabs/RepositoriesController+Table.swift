@@ -7,6 +7,7 @@
 
 import AptRepository
 import UIKit
+import SPIndicator
 
 extension RepositoriesController: UITableViewDelegate {
     func url(at indexPath: IndexPath) -> URL? {
@@ -89,7 +90,7 @@ extension RepositoriesController: UITableViewDelegate {
             completion(true)
         }
         // Use design token for swipe action background
-        pinItem.backgroundColor = .buttonNormal
+        pinItem.backgroundColor = UIColor.buttonNormal
 
         let shareItem = UIContextualAction(
             style: .normal,
