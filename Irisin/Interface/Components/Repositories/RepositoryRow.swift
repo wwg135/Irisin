@@ -44,9 +44,9 @@ class RepositoryRow: UIView {
         $0.clipsToBounds = true
     }
 
-    // Prominent pinned badge using an icon asset
+    // Prominent pinned badge using system pin icon
     let pinnedBadge = UIImageView().then {
-        if let img = UIImage(named: "arrowUpCircle24Filled") {
+        if let img = UIImage(systemName: "pin.fill") {
             $0.image = img.withRenderingMode(.alwaysTemplate)
         }
         // Use design token for on-accent text color
