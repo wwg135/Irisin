@@ -60,6 +60,55 @@ class RepositoriesController: UIViewController {
     private var dataSourceCache: [URL] = []
     private var lastUpdateTouched: Date?
 
+    private static let pinnedRepositoryKey = "IrisinPinnedRepositoriesKey"
+
+    static func normalizedRepositoryString(_ url: URL) -> String {
+        let value = url.absoluteString.lowercased()
+        return value.hasSuffix("/") ? String(value.dropLast()) : value
+    }
+
+    static func pinnedRepositoryUrls() -> [String] {
+        (UserDefaults.standard.array(forKey: Self.pinnedRepositoryKey) as? [String] ?? [])
+            .map { $0.lowercased() }
+    }
+
+    static func isPinned(_ url: URL) -> Bool {
+        let key = normalizedRepositoryString(url)
+        return pinnedRepositoryUrls().contains(key)
+    }
+
+    static func togglePinned(_ url: URL) {
+        let key = normalizedRepositoryString(url)
+        var pinned = pinnedRepositoryUrls()
+        if let index = pinned.firstIndex(of: key) {
+            pinned.remove(at: index)
+        } else {
+            pinned.insert(key, at: 0)
+        }
+        UserDefaults.standard.set(pinned, forKey: Self.pinnedRepositoryKey)
+    }
+
+    static func orderedRepositoryUrls(_ urls: [URL]) -> [URL] {
+        let pinnedStrings = pinnedRepositoryUrls()
+        let pinnedSet = Set(pinnedStrings)
+        let pinned = urls
+            .filter { pinnedSet.contains(normalizedRepositoryString($0)) }
+            .sorted { lhs, rhs in
+                let lhsIndex = pinnedStrings.firstIndex(of: normalizedRepositoryString(lhs)) ?? Int.max
+                let rhsIndex = pinnedStrings.firstIndex(of: normalizedRepositoryString(rhs)) ?? Int.max
+                return lhsIndex < rhsIndex
+            }
+        let other = urls.filter { !pinnedSet.contains(normalizedRepositoryString($0)) }
+        return pinned + other
+    }
+
+    static func removePinned(_ url: URL) {
+        let key = normalizedRepositoryString(url)
+        var pinned = pinnedRepositoryUrls()
+        pinned.removeAll { $0 == key }
+        UserDefaults.standard.set(pinned, forKey: Self.pinnedRepositoryKey)
+    }
+
     nonisolated enum Row: Hashable {
         case repository(URL)
         case none
@@ -138,9 +187,9 @@ class RepositoriesController: UIViewController {
         guard RepositoryCenter.default.isLoaded else { return }
         let animated = animated && hasListedRepositories
         hasListedRepositories = true
-        dataSourceCache = RepositoryCenter
-            .default
-            .obtainRepositoryUrls(sortedByName: true)
+        dataSourceCache = Self.orderedRepositoryUrls(
+            RepositoryCenter.default.obtainRepositoryUrls(sortedByName: true)
+        )
         applySnapshot(animatingDifferences: animated && tableView.shouldAnimateDiff)
         updateFooter()
     }
@@ -286,6 +335,7 @@ class RepositoriesController: UIViewController {
     /// Drops a repository and everything cached for it. The sidebar removes
     /// through here too.
     static func remove(_ url: URL) {
+        removePinned(url)
         // first: the sign-in record is found through the repository, which
         // must still be registered
         VendorAccount.shared.deleteSignInRecord(for: url)
@@ -473,3 +523,4 @@ extension RepositoriesController: UIDocumentPickerDelegate {
         importRepositories(from: file)
     }
 }
+

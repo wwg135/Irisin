@@ -56,3 +56,4 @@ class RepositoryTableCell: UITableViewCell {
         updateFill.url = nil
     }
 }
+
