@@ -234,7 +234,7 @@ class RepositoriesController: UIViewController {
         super.setEditing(editing, animated: animated)
         tableView.setEditing(editing, animated: animated)
         if editing {
-            navigationItem.setLeftBarButton(deleteSelectedItem, animated: animated)
+            navigationItem.setLeftBarButtonItems([deleteSelectedItem, pinSelectedItem], animated: animated)
             navigationItem.setRightBarButtonItems([
                 UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(endEditing)),
                 refreshSelectedItem,
@@ -270,6 +270,15 @@ class RepositoriesController: UIViewController {
         $0.tintColor = .destructiveAction
     }
 
+    private lazy var pinSelectedItem = UIBarButtonItem(
+        title: String(localized: "Pin/Unpin"),
+        style: .plain,
+        target: self,
+        action: #selector(pinSelected)
+    ).then {
+        $0.tintColor = .systemYellow
+    }
+
     private lazy var refreshSelectedItem = UIBarButtonItem(
         image: UIImage(systemName: "arrow.clockwise"),
         style: .plain,
@@ -287,6 +296,7 @@ class RepositoriesController: UIViewController {
         let any = !selectedUrls.isEmpty
         deleteSelectedItem.isEnabled = any
         refreshSelectedItem.isEnabled = any
+        pinSelectedItem.isEnabled = any
     }
 
     @objc
@@ -300,6 +310,30 @@ class RepositoriesController: UIViewController {
         guard !urls.isEmpty else { return }
         delete(urls)
         setEditing(false, animated: true)
+    }
+
+    @objc
+    private func pinSelected() {
+        let urls = selectedUrls
+        guard !urls.isEmpty else { return }
+        var pinnedCount = 0
+        var unpinnedCount = 0
+        for url in urls {
+            if Self.isPinned(url) {
+                Self.togglePinned(url) // will unpin
+                unpinnedCount += 1
+            } else {
+                Self.togglePinned(url) // will pin
+                pinnedCount += 1
+            }
+        }
+        reloadDataSource()
+        let messageParts: [String] = [
+            pinnedCount > 0 ? "Pinned \(pinnedCount)" : "",
+            unpinnedCount > 0 ? "Unpinned \(unpinnedCount)" : "",
+        ].compactMap { $0 }
+        SPIndicator.present(title: messageParts.joined(separator: ", "), preset: .done)
+        updateSelectionItems()
     }
 
     /// Asks first: a repository takes its whole catalogue with it.
@@ -523,4 +557,3 @@ extension RepositoriesController: UIDocumentPickerDelegate {
         importRepositories(from: file)
     }
 }
-

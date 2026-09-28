@@ -44,6 +44,19 @@ class RepositoryRow: UIView {
         $0.clipsToBounds = true
     }
 
+    // Prominent pinned badge using an icon asset
+    let pinnedBadge = UIImageView().then {
+        if let img = UIImage(named: "arrowUpCircle24Filled") {
+            $0.image = img.withRenderingMode(.alwaysTemplate)
+        }
+        $0.tintColor = .white
+        $0.contentMode = .scaleAspectFit
+        $0.backgroundColor = .buttonNormal
+        $0.layer.cornerRadius = 11
+        $0.clipsToBounds = true
+        $0.isHidden = true
+    }
+
     var repoUrl: URL?
 
     let contentView = UIView()
@@ -61,6 +74,7 @@ class RepositoryRow: UIView {
         }
         contentView.addSubview(icon)
         contentView.addSubview(text)
+        contentView.addSubview(pinnedBadge)
         contentView.addSubview(arrow)
         contentView.addSubview(indicator)
 
@@ -87,7 +101,14 @@ class RepositoryRow: UIView {
             x.centerY.equalTo(contentView.snp.centerY)
             x.top.greaterThanOrEqualToSuperview().offset(6)
             x.leading.equalTo(icon.snp.trailing).offset(8)
+            x.trailing.equalTo(pinnedBadge.snp.leading).offset(-8)
+        }
+
+        pinnedBadge.snp.makeConstraints { x in
+            x.centerY.equalTo(contentView.snp.centerY)
             x.trailing.equalTo(arrow.snp.leading).offset(-10)
+            x.height.equalTo(22)
+            x.width.equalTo(22)
         }
 
         arrow.snp.makeConstraints { x in
@@ -131,6 +152,8 @@ class RepositoryRow: UIView {
         let repo = RepositoryCenter.default.obtainImmutableRepository(withUrl: withUrl)
         title.text = repo?.nickName ?? ""
         subtitle.text = repo.map(Self.summary(of:)) ?? ""
+        let isPinned = RepositoriesController.isPinned(withUrl)
+        pinnedBadge.isHidden = !isPinned
         // one stop per repository, opened as a button; the arrow is drawn,
         // not read, and the dot is read as words
         let health = RepositoryCenter.default.refreshHealth(withUrl: withUrl)
@@ -185,6 +208,7 @@ class RepositoryRow: UIView {
         arrow.isHidden = true
         title.text = String(localized: "No repositories")
         subtitle.text = String(localized: "Use the add button above to add a repository.")
+        pinnedBadge.isHidden = true
         iconTask?.cancel()
         iconTask = nil
         setIcon(nil, of: nil)
