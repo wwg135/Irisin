@@ -181,7 +181,7 @@ class RepositoriesController: UIViewController {
         diffableDataSource.apply(snapshot, animatingDifferences: animatingDifferences)
     }
 
-    private func reloadDataSource(animated: Bool = true) {
+    func reloadDataSource(animated: Bool = true) {
         // Before the repositories are read there is no list to show, and
         // "No repositories" would be a guess; the first list arrives whole.
         guard RepositoryCenter.default.isLoaded else { return }
