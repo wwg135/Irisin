@@ -88,7 +88,8 @@ extension RepositoriesController: UITableViewDelegate {
             SPIndicator.present(title: isPinned ? String(localized: "Unpinned") : String(localized: "Pinned"), preset: .done)
             completion(true)
         }
-        pinItem.backgroundColor = .systemYellow
+        // Use design token for swipe action background
+        pinItem.backgroundColor = .buttonNormal
 
         let shareItem = UIContextualAction(
             style: .normal,

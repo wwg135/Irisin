@@ -49,8 +49,10 @@ class RepositoryRow: UIView {
         if let img = UIImage(named: "arrowUpCircle24Filled") {
             $0.image = img.withRenderingMode(.alwaysTemplate)
         }
-        $0.tintColor = .white
+        // Use design token for on-accent text color
+        $0.tintColor = .onAccent
         $0.contentMode = .scaleAspectFit
+        // Use design token for accent/background
         $0.backgroundColor = .buttonNormal
         $0.layer.cornerRadius = 11
         $0.clipsToBounds = true

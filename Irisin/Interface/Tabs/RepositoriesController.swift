@@ -276,7 +276,7 @@ class RepositoriesController: UIViewController {
         target: self,
         action: #selector(pinSelected)
     ).then {
-        $0.tintColor = .systemYellow
+        $0.tintColor = .buttonNormal
     }
 
     private lazy var refreshSelectedItem = UIBarButtonItem(
