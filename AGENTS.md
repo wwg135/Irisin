@@ -546,6 +546,18 @@ is `/var/jb/var/log/irisin-install.log`.
   module's by case alone, and on a case-insensitive volume the compiler
   refused it: "cannot load module 'LibArchive' as 'libarchive'". Swift
   imports `ArchiveKit` now; the C shim that worked around that is gone.
+- **swift-collections is pinned at exactly 1.6.0.** 1.7.0 adopts the Swift
+  6.4 standard library's borrow types, and built with Xcode 27 the app
+  imports `swift_initBorrow`, which only iOS 27's libswiftCore has: 4.5.11
+  died in dyld at launch on iOS 26 ("Symbol not found: _swift_initBorrow").
+  The pin is in `project.pbxproj` and `Packages/MarkdownView/Package.swift`
+  and they move together. Whoever moves it tells the developer to launch a
+  packaged Release build on a device below iOS 27 before it ships; a build
+  that succeeds proves nothing. `Scripts/audit-ios-floor.sh`, the
+  template's (platformize-app-ios), runs over the app, `irisind` and
+  `irisin-install` before every package is made and fails on a runtime
+  symbol, library, or build version above the deployment target; a fix to
+  it goes to the template first.
 - **The project is built with Xcode 27 and CI has 26.6.** The runner image
   has no Xcode 27, so one thing is a workaround and comes out the day it
   does: `UITabBarController.prominentTabIdentifier` is in the iOS 27 SDK and
@@ -574,6 +586,13 @@ is `/var/jb/var/log/irisin-install.log`.
   `spawn scheduled`, and the app, which never falls back beside a daemon
   plist, said Waiting for good. `launchctl print system/wiki.qaq.irisind`
   shows the doubled `program`; installing the package again repairs it.
+- **`extrainst_` is a maintainer script on every iOS bootstrap.** Procursus
+  patches dpkg (`build_patch/dpkg/extrainst.diff`) to run the new one in
+  `process_archive` once the files are extracted, before the old postrm:
+  `install`, or `upgrade <old version>`. openssh-server has no postinst and
+  loads sshd from it; through 4.5.11 the helper only kept the file, and sshd
+  waited for the next boot. `PackageTransaction.runExtrainst` runs it there,
+  a failure aborts the unpack, and the queue's package page lists it.
 - **The vphone loses its `/var/jb` symlink** after some boots because the
   first-boot script exits early on its done marker. Recreate it:
   `ln -sf /private/preboot/<hash>/jb-vphone/procursus /private/var/jb`.
