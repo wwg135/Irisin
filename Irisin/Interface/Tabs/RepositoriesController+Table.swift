@@ -119,8 +119,10 @@ extension RepositoriesController: UITableViewDelegate {
         bg.clipsToBounds = true
 
         let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .secondaryLabel
+        // Use design token for font instead of literal systemFont
+        label.font = UIFont.rounded(.footnote, emphasized: true)
+        // Use design token for color
+        label.textColor = .textSubtitle
         label.text = section == 0 ? String(localized: "Pinned") : String(localized: "Repositories")
 
         header.addSubview(bg)
