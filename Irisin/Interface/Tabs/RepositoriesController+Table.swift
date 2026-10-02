@@ -103,20 +103,46 @@ extension RepositoriesController: UITableViewDelegate {
         return UISwipeActionsConfiguration(actions: [pinItem, shareItem])
     }
 
-    // MARK: - Section headers for card groups
+    // MARK: - Header views for clearer card groups
 
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        switch section {
-        case 0:
-            // Only show "Pinned" when we actually have pinned items
-            let pinnedCount = Self.pinnedRepositoryUrls().isEmpty ? 0 : diffableDataSource.snapshot().numberOfItems(inSection: 0)
-            return pinnedCount > 0 ? String(localized: "Pinned") : nil
-        case 1:
-            // If there are no items in section 1 (and section 0 has items), don't show header
-            let otherCount = diffableDataSource.snapshot().numberOfItems(inSection: 1)
-            return otherCount > 0 ? String(localized: "Repositories") : nil
-        default:
-            return nil
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let snapshot = diffableDataSource.snapshot()
+        let count = snapshot.numberOfItems(inSection: section)
+        guard count > 0 else { return nil }
+
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        let bg = UIView()
+        bg.backgroundColor = UIColor.tertiarySystemGroupedBackground
+        bg.layer.cornerRadius = 10
+        bg.clipsToBounds = true
+
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.textColor = .secondaryLabel
+        label.text = section == 0 ? String(localized: "Pinned") : String(localized: "Repositories")
+
+        header.addSubview(bg)
+        bg.addSubview(label)
+
+        bg.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(12)
+            make.top.equalToSuperview().offset(6)
+            make.bottom.equalToSuperview().offset(-6)
+            make.height.greaterThanOrEqualTo(32)
         }
+        label.snp.makeConstraints { make in
+            make.leading.equalTo(bg.snp.leading).offset(12)
+            make.centerY.equalTo(bg.snp.centerY)
+        }
+
+        return header
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        let snapshot = diffableDataSource.snapshot()
+        let count = snapshot.numberOfItems(inSection: section)
+        return count > 0 ? 44 : 0.1
     }
 }
