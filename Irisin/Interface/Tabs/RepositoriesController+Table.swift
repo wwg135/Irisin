@@ -102,4 +102,21 @@ extension RepositoriesController: UITableViewDelegate {
         shareItem.backgroundColor = .swipeShare
         return UISwipeActionsConfiguration(actions: [pinItem, shareItem])
     }
+
+    // MARK: - Section headers for card groups
+
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        switch section {
+        case 0:
+            // Only show "Pinned" when we actually have pinned items
+            let pinnedCount = Self.pinnedRepositoryUrls().isEmpty ? 0 : diffableDataSource.snapshot().numberOfItems(inSection: 0)
+            return pinnedCount > 0 ? String(localized: "Pinned") : nil
+        case 1:
+            // If there are no items in section 1 (and section 0 has items), don't show header
+            let otherCount = diffableDataSource.snapshot().numberOfItems(inSection: 1)
+            return otherCount > 0 ? String(localized: "Repositories") : nil
+        default:
+            return nil
+        }
+    }
 }
