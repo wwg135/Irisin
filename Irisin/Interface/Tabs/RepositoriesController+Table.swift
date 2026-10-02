@@ -113,30 +113,21 @@ extension RepositoriesController: UITableViewDelegate {
         let header = UIView()
         header.backgroundColor = .clear
 
-        let bg = UIView()
-        bg.backgroundColor = UIColor.tertiarySystemGroupedBackground
-        bg.layer.cornerRadius = 10
-        bg.clipsToBounds = true
-
+        // Plain header without background card - label only
         let label = UILabel()
         // Use design token for font instead of literal systemFont
         label.font = UIFont.rounded(.footnote, emphasized: true)
         // Use design token for color
         label.textColor = .textSubtitle
-        label.text = section == 0 ? String(localized: "Pinned") : String(localized: "Repositories")
+        // Use localized "Pin" for section 0 per request
+        label.text = section == 0 ? String(localized: "Pin") : String(localized: "Repositories")
 
-        header.addSubview(bg)
-        bg.addSubview(label)
+        header.addSubview(label)
 
-        bg.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(12)
+        label.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(16)
             make.top.equalToSuperview().offset(6)
             make.bottom.equalToSuperview().offset(-6)
-            make.height.greaterThanOrEqualTo(32)
-        }
-        label.snp.makeConstraints { make in
-            make.leading.equalTo(bg.snp.leading).offset(12)
-            make.centerY.equalTo(bg.snp.centerY)
         }
 
         return header
@@ -145,6 +136,6 @@ extension RepositoriesController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         let snapshot = diffableDataSource.snapshot()
         let count = snapshot.numberOfItems(inSection: section)
-        return count > 0 ? 44 : 0.1
+        return count > 0 ? 36 : 0.1
     }
 }
