@@ -108,7 +108,12 @@ extension RepositoriesController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let snapshot = diffableDataSource.snapshot()
         let count = snapshot.numberOfItems(inSection: section)
-        guard count > 0 else { return nil }
+        // For section 0, also ensure the persistent pinned list is non-empty
+        if section == 0 {
+            guard !Self.pinnedRepositoryUrls().isEmpty && count > 0 else { return nil }
+        } else {
+            guard count > 0 else { return nil }
+        }
 
         let header = UIView()
         header.backgroundColor = .clear
@@ -136,6 +141,9 @@ extension RepositoriesController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         let snapshot = diffableDataSource.snapshot()
         let count = snapshot.numberOfItems(inSection: section)
+        if section == 0 {
+            return (!Self.pinnedRepositoryUrls().isEmpty && count > 0) ? 36 : 0.1
+        }
         return count > 0 ? 36 : 0.1
     }
 }
