@@ -48,7 +48,8 @@ class RepositoriesNavigator: UINavigationController {
 class RepositoriesController: UIViewController {
     private var subscriptions = Set<AnyCancellable>()
 
-    let tableView = UITableView(frame: .zero, style: .plain)
+    // Use insetGrouped to render sections as card-like groups
+    let tableView = UITableView(frame: .zero, style: .insetGrouped)
     let refreshControl = SettlingRefreshControl()
     private let cellIdentity = "repository"
 
@@ -208,12 +209,29 @@ class RepositoriesController: UIViewController {
         let urls = shownUrls
         let isSearching = !searchText.isEmpty
         var snapshot = NSDiffableDataSourceSnapshot<Int, Row>()
-        snapshot.appendSections([0])
+        // two sections: 0 = pinned, 1 = others
+        snapshot.appendSections([0, 1])
+
         if dataSourceCache.isEmpty, !isSearching {
-            snapshot.appendItems([.none])
+            snapshot.appendItems([.none], toSection: 1)
         } else {
-            snapshot.appendItems(urls.map(Row.repository))
+            let pinnedStrings = Self.pinnedRepositoryUrls()
+            let pinnedSet = Set(pinnedStrings)
+
+            let pinnedUrls = urls
+                .filter { pinnedSet.contains(Self.normalizedRepositoryString($0)) }
+                .sorted { lhs, rhs in
+                    let lhsIndex = pinnedStrings.firstIndex(of: Self.normalizedRepositoryString(lhs)) ?? Int.max
+                    let rhsIndex = pinnedStrings.firstIndex(of: Self.normalizedRepositoryString(rhs)) ?? Int.max
+                    return lhsIndex < rhsIndex
+                }
+
+            let otherUrls = urls.filter { !pinnedSet.contains(Self.normalizedRepositoryString($0)) }
+
+            snapshot.appendItems(pinnedUrls.map(Row.repository), toSection: 0)
+            snapshot.appendItems(otherUrls.map(Row.repository), toSection: 1)
         }
+
         snapshot.reconfigureItems(survivingFrom: diffableDataSource.snapshot())
         diffableDataSource.apply(snapshot, animatingDifferences: animatingDifferences)
         // a search that holds every row back says so; a blank page looks broken
