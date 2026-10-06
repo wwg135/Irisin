@@ -275,7 +275,7 @@ final class QueueController: UIViewController, UITableViewDelegate {
         let manager = PackageQueue.shared
         let plan = manager.plan
         var snapshot = NSDiffableDataSourceSnapshot<Section, Row>()
-        let changes = QueueChange.changes(of: plan, requested: Set(manager.actions.map(\.identity)))
+        let changes = QueueChange.changes(of: plan, requested: Set(manager.actions.map(\ .identity)))
         if let reason = manager.blocked ?? failure {
             snapshot.appendSections([.failure])
             snapshot.appendItems([.failure(reason)], toSection: .failure)
@@ -564,6 +564,9 @@ final class QueueController: UIViewController, UITableViewDelegate {
         let pending = plan.install.filter { $0.localFileURL == nil }
         guard !pending.isEmpty else {
             stage = .ready
+            // Download finished: start the install automatically without
+            // requiring a manual tap on Execute.
+            run(plan)
             return
         }
         stage = .downloading
@@ -587,11 +590,9 @@ final class QueueController: UIViewController, UITableViewDelegate {
                 reload()
                 return
             }
-            if committed {
-                run(plan)
-            } else {
-                stage = .ready
-            }
+            // Download finished: start the install automatically without
+            // requiring a manual tap on Execute.
+            run(plan)
         }
     }
 
