@@ -14,7 +14,10 @@ class RepositoryTableCell: UITableViewCell {
 
     private let updateFill = RepositoryUpdateFill()
 
-    /// Padding around the repository row.
+    /// Container that provides the card background for each row.
+    private let cardBackground = UIView()
+
+    /// Padding around the repository row's content inside the card.
     var contentInsets: UIEdgeInsets = .zero {
         didSet {
             coordinatedCell.snp.remakeConstraints { x in
@@ -31,13 +34,27 @@ class RepositoryTableCell: UITableViewCell {
         selectedBackgroundView = UIView()
         multipleSelectionBackgroundView = UIView()
         backgroundColor = .clear
-        contentView.addSubview(updateFill)
-        contentView.addSubview(coordinatedCell)
+
+        // Card background sits inside contentView and holds the row contents.
+        contentView.addSubview(cardBackground)
+        cardBackground.snp.makeConstraints { x in
+            // match inset grouped spacing a bit tighter
+            x.edges.equalToSuperview().inset(UIEdgeInsets(top: 4, left: 12, bottom: 4, right: 12))
+        }
+        cardBackground.backgroundColor = UIColor.secondarySystemGroupedBackground
+        cardBackground.layer.cornerRadius = 12
+        cardBackground.clipsToBounds = true
+        cardBackground.layer.borderWidth = 1
+        cardBackground.layer.borderColor = UIColor.separator.withAlphaComponent(0.08).cgColor
+
+        // The update fill and the coordinated cell live inside the card.
+        cardBackground.addSubview(updateFill)
+        cardBackground.addSubview(coordinatedCell)
         updateFill.snp.makeConstraints { x in
             x.edges.equalToSuperview()
         }
         coordinatedCell.snp.makeConstraints { x in
-            x.edges.equalToSuperview()
+            x.edges.equalToSuperview().inset(contentInsets)
         }
     }
 

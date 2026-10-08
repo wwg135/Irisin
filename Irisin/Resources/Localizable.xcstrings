@@ -63625,6 +63625,38 @@
           }
         }
       }
+    },
+    "Pin" : {
+      "localizations" : {
+        "en" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "Pin" 
+          } 
+        },
+        "zh-Hans" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "置顶" 
+          } 
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "en" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "Unpin" 
+          } 
+        },
+        "zh-Hans" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "取消置顶" 
+          } 
+        }
+      }
     }
   },
   "version" : "1.3"
