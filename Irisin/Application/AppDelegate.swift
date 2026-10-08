@@ -33,10 +33,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private static func prepareEnvironment() {
         // MARK: - Document
 
+        // The postinst makes the data folder at install, so a normal launch
+        // finds it. When it cannot be made here — a home that is missing
+        // (on roothide icli registers it inside the bootstrap, which need
+        // not have var/mobile), or a Documents that is root's — the helper
+        // makes the missing levels for mobile, as the postinst does, and the
+        // folder is tried once more.
         let reset = resetApplicationDataIfRequested()
         do {
-            let created = Result {
-                try FileManager.default.createDirectory(at: documentsDirectory, withIntermediateDirectories: true)
+            let make = {
+                Result {
+                    try FileManager.default.createDirectory(at: documentsDirectory, withIntermediateDirectories: true)
+                }
+            }
+            var created = make()
+            if case .failure = created {
+                requestHomeFromDaemon()
+                created = make()
             }
             var isDir = ObjCBool(false)
             let exists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
@@ -115,6 +128,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 Dog.shared.join("Env", "\(key): \(value)", level: .verbose)
             }
         #endif
+    }
+
+    /// Runs `prepareUserHome` and waits for it, `timeout` at most. The log
+    /// lives in the home, so the outcome goes to NSLog; a failure is left to
+    /// the documents check after it.
+    private static func requestHomeFromDaemon(timeout: TimeInterval = 15) {
+        NSLog("[Irisin] %@ cannot be made, asking irisind to prepare it", documentsDirectory.path)
+        let finished = DispatchSemaphore(value: 0)
+        Task.detached {
+            defer { finished.signal() }
+            do {
+                let transcript = try await PrivilegedBackend.link.run(.prepareUserHome)
+                for await event in transcript.events {
+                    NSLog("[Irisin] %@", event.description)
+                }
+            } catch {
+                NSLog("[Irisin] could not ask irisind for a home: %@", String(describing: error))
+            }
+        }
+        if finished.wait(timeout: .now() + timeout) == .timedOut {
+            NSLog("[Irisin] irisind did not make a home within %.0f seconds", timeout)
+        }
     }
 
     func application(

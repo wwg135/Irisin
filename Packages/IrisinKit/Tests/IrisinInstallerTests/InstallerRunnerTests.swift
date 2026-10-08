@@ -70,6 +70,87 @@ final class InstallerRunnerTests: XCTestCase {
         XCTAssertEqual(events.filter { $0 == .phase(.completed) }.count, 2)
     }
 
+    func testPrepareUserHomeMakesTheJbrootHomeForMobile() throws {
+        // giving it to mobile takes root
+        try XCTSkipUnless(getuid() == 0)
+        let root = try Scratch.installRoot()
+        try FileManager.default.createDirectory(atPath: root + "/var", withIntermediateDirectories: true)
+        var events: [InstallerEvent] = []
+        let layout = BootstrapLayout(kind: .roothide(jbroot: root))
+        let runner = InstallerRunner(installRoot: root, layout: layout, emit: { events.append($0) }) { _, _ in 0 }
+        XCTAssertEqual(runner.run(.prepareUserHome), 0)
+        let mobile = getpwnam("mobile")?.pointee.pw_uid ?? 501
+        // every level, not only the last: a `mkdir -p` as root left the
+        // levels above it root's
+        for directory in ["/var/mobile", "/var/mobile/Documents", "/var/mobile/Documents/wiki.qaq.irisin"] {
+            var info = stat()
+            XCTAssertEqual(lstat(root + directory, &info), 0, directory)
+            XCTAssertEqual(info.st_mode & S_IFMT, S_IFDIR, directory)
+            XCTAssertEqual(info.st_mode & 0o777, 0o755, directory)
+            XCTAssertEqual(info.st_uid, mobile, directory)
+        }
+        XCTAssertTrue(events.contains(.phase(.completed)))
+    }
+
+    func testPrepareUserHomeGivesARootDocumentsBackToMobile() throws {
+        try XCTSkipUnless(getuid() == 0)
+        let root = try Scratch.installRoot()
+        let documents = root + "/var/mobile/Documents"
+        try FileManager.default.createDirectory(atPath: documents + "/wiki.qaq.irisin", withIntermediateDirectories: true)
+        chown(documents, 0, 0)
+        var events: [InstallerEvent] = []
+        let layout = BootstrapLayout(kind: .roothide(jbroot: root))
+        let runner = InstallerRunner(installRoot: root, layout: layout, emit: { events.append($0) }) { _, _ in 0 }
+        XCTAssertEqual(runner.run(.prepareUserHome), 0)
+        var info = stat()
+        XCTAssertEqual(lstat(documents, &info), 0)
+        XCTAssertEqual(info.st_uid, getpwnam("mobile")?.pointee.pw_uid ?? 501)
+    }
+
+    func testPrepareUserHomeLeavesAnExistingHome() throws {
+        let root = try Scratch.installRoot()
+        let data = root + "/var/mobile/Documents/wiki.qaq.irisin"
+        try FileManager.default.createDirectory(atPath: data, withIntermediateDirectories: true)
+        chmod(root + "/var/mobile", 0o700)
+        var events: [InstallerEvent] = []
+        let layout = BootstrapLayout(kind: .roothide(jbroot: root))
+        let runner = InstallerRunner(installRoot: root, layout: layout, emit: { events.append($0) }) { _, _ in 0 }
+        XCTAssertEqual(runner.run(.prepareUserHome), 0)
+        var info = stat()
+        XCTAssertEqual(stat(root + "/var/mobile", &info), 0)
+        XCTAssertEqual(info.st_mode & 0o777, 0o700)
+        XCTAssertEqual(info.st_uid, getuid())
+        XCTAssertFalse(events.contains(.phase(.applying)))
+        XCTAssertTrue(events.contains(.phase(.completed)))
+    }
+
+    func testPrepareUserHomeRefusesAFileInItsPlace() throws {
+        let root = try Scratch.installRoot()
+        try FileManager.default.createDirectory(atPath: root + "/var", withIntermediateDirectories: true)
+        try Data().write(to: URL(fileURLWithPath: root + "/var/mobile"))
+        var events: [InstallerEvent] = []
+        let layout = BootstrapLayout(kind: .roothide(jbroot: root))
+        let runner = InstallerRunner(installRoot: root, layout: layout, emit: { events.append($0) }) { _, _ in 0 }
+        XCTAssertEqual(runner.run(.prepareUserHome), 1)
+        XCTAssertFalse(events.contains(.phase(.completed)))
+    }
+
+    func testPrepareUserHomeRefusesASymlinkedDocuments() throws {
+        // mobile owns the home, so it could put a link where Documents goes
+        // and have root hand it whatever the link names
+        let root = try Scratch.installRoot()
+        let elsewhere = root + "/elsewhere"
+        try FileManager.default.createDirectory(atPath: elsewhere, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(atPath: root + "/var/mobile", withIntermediateDirectories: true)
+        XCTAssertEqual(symlink(elsewhere, root + "/var/mobile/Documents"), 0)
+        var events: [InstallerEvent] = []
+        let layout = BootstrapLayout(kind: .roothide(jbroot: root))
+        let runner = InstallerRunner(installRoot: root, layout: layout, emit: { events.append($0) }) { _, _ in 0 }
+        XCTAssertEqual(runner.run(.prepareUserHome), 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: elsewhere + "/wiki.qaq.irisin"))
+        XCTAssertFalse(events.contains(.phase(.completed)))
+    }
+
     func testRespringUsesRegistrar() throws {
         let root = try Scratch.installRoot()
         let registrar = RegistrarStandIn()
