@@ -1,13 +1,13 @@
 {
-  "originHash" : "14f126dc189a68318fe152d57b1ea25ab895d24001408d0eb5dfa773368a4ac9",
+  "originHash" : "c695529dab3b6afd82883b234bce1c2aaed02eac63bd5750b233aae4568174fc",
   "pins" : [
     {
       "identity" : "icli",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/owngoal-dev/icli.git",
       "state" : {
-        "revision" : "6f4e14249aa40f9e54d6031a7e3395918b3e3abd",
-        "version" : "0.7.17"
+        "revision" : "815ef234df5461b8eb9455931d38cb1c37992fe6",
+        "version" : "0.8.5"
       }
     },
     {
