@@ -51,8 +51,9 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   Everything privileged is an `InstallerJob` sent through `PrivilegedBackend`.
 - **The wire carries jobs, never commands.** `InstallerJob` is a closed enum:
   an ordered package transaction (prepared files and identities), rebuild the
-  icon cache, respring, bootstrap or boot out Irisin's own daemon, reload
-  AirDrop, enter safe mode, make the app's data folder. The daemon jobs carry
+  icon cache, register Irisin's own app, respring, bootstrap or boot out
+  Irisin's own daemon, reload AirDrop, enter safe mode, make the app's data
+  folder. The daemon jobs carry
   no path or label: the helper derives its own installed plist, and the home
   from the layout (`<jbroot>/var/mobile` on roothide, where icli registers
   apps' HOME and a bootstrap need not have it). The helper validates
@@ -92,7 +93,15 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   `InstallerEvent+Console` spells them in the user's language. The
   operation page is the queue's list with a ring per row and nothing else
   that moves; a failure offers Try Again as a small link below the list,
-  which runs the re-solved queue in a new controller in the same sheet. A
+  which runs the re-solved queue in a new controller in the same sheet. The
+  button that closes it is the monitor's `Ending`: Done, Done that leaves
+  after an update of Irisin, or Reload Home Screen when the run, failed or
+  not, left the tweak loader's directories different (`TweakInjection`,
+  read before the helper starts and after the installed list is read back;
+  a daemon a tweak injects into is the tweak's own to restart). Touch and
+  hold has Skip for Now, and a run Try Again follows keeps the change. An
+  update of Irisin stays Done: registering stops the app, so nothing can
+  follow it. A
   footnote under the list fades in while the helper finishes after the last row, and the helper's
   lines are on the log page and on the failed package's page, never on the
   list. The
@@ -115,7 +124,17 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   signed with for this work is in `Packaging/irisin-install.entitlements`,
   the helper's alone; the daemon gets none of it. The package's own postinst
   first pipes `bootstrapIrisinDaemon` into the helper, then registers the app
-  with a `rebuildIconCache` job. A fix
+  with a `rebuildIconCache` job, except under Irisin's own helper, which sets
+  `IRISIN_INSTALLER_*` in every maintainer script's environment (dpkg sets
+  none). **A transaction never registers or unregisters Irisin's own
+  bundle:** depending on the system, LaunchServices stops the app it
+  registers, halfway through its own update. The helper skips the bundle
+  (found through the list that has the helper, never by name), and so do
+  the file triggers of Irisin's own package (uikittools' `uicache -a` on
+  `/Applications`). The app sends `registerOwnApplication` from its
+  Updating App alert as it exits, and at the next launch, once per build,
+  when LaunchServices still has an older build. A removed bundle is
+  unregistered after the transcript's `exit` (`finishAfterExit`). A fix
   to the LaunchServices code goes to the icli repository and arrives here as
   a version bump.
 - **Peer authentication is the whole trust boundary.** Audit token (pid > 1,
