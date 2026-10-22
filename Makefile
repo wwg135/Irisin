@@ -13,6 +13,7 @@ PROJECT             := $(ROOT_DIR)/Irisin.xcodeproj
 # the same name anywhere in the graph (Runestone, MarkdownView: vendored).
 WORKSPACE           := $(ROOT_DIR)/Irisin.xcworkspace
 SCHEME              := Irisin
+CLI_SCHEME          := irisin-cli
 CONFIGURATION       ?= Release
 # Not under /tmp: Xcode spells that /tmp while FileManager resolves it to
 # /private/tmp, and some package manifests strip checkout paths by string
@@ -21,6 +22,7 @@ DERIVED_DATA        ?= $(HOME)/Library/Caches/irisin-deriveddata
 APP_BUNDLE          := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphoneos/irisin.app
 DAEMON_BINARY       := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphoneos/irisind
 HELPER_BINARY       := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphoneos/irisin-install
+CLI_BINARY          := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphoneos/irisin-cli
 SIMULATOR_APP       := $(DERIVED_DATA)/Build/Products/Debug-iphonesimulator/irisin.app
 SIMULATOR           ?= booted
 APP_BUNDLE_ID       := wiki.qaq.irisin
@@ -77,6 +79,7 @@ CONTROL_TEMPLATE    := $(ROOT_DIR)/Packaging/DEBIAN/control
 ENTITLEMENTS        := $(ROOT_DIR)/Packaging/irisin.entitlements
 DAEMON_ENTITLEMENTS := $(ROOT_DIR)/Packaging/irisind.entitlements
 HELPER_ENTITLEMENTS := $(ROOT_DIR)/Packaging/irisin-install.entitlements
+CLI_ENTITLEMENTS    := $(ROOT_DIR)/Packaging/irisin-cli.entitlements
 LAUNCH_DAEMON       := $(ROOT_DIR)/Packaging/wiki.qaq.irisind.plist
 INFO_PLIST_SUPPLEMENT := $(ROOT_DIR)/Packaging/Irisin-Info.plist
 
@@ -144,6 +147,7 @@ check:
 	@command -v dpkg-deb >/dev/null || { echo "error: dpkg-deb is required" >&2; exit 69; }
 	@test -d "$(PROJECT)" || { echo "error: Irisin.xcodeproj is missing" >&2; exit 66; }
 	@"$(ROOT_DIR)/Scripts/check-gpu-entitlements.py" "$(ROOT_DIR)/Packaging/irisin.entitlements"
+	@"$(ROOT_DIR)/Scripts/check-cli-entitlements.py" "$(ROOT_DIR)/Packaging/irisin.entitlements" "$(ROOT_DIR)/Packaging/irisin-cli.entitlements"
 	@"$(ROOT_DIR)/Scripts/check-launchd-paths.py" "$(LAUNCH_DAEMON)" --substituted-by "$(ROOT_DIR)/Scripts/package-deb.sh"
 	@test -f "$(WORKSPACE)/contents.xcworkspacedata" || { echo "error: Irisin.xcworkspace is missing" >&2; exit 66; }
 	@for package in "$(ROOT_DIR)"/Packages/*/Package.swift; do \
@@ -171,14 +175,14 @@ check:
 	@objver="$$(sed -n 's/^[[:space:]]*objectVersion = \([0-9]*\);.*/\1/p' "$(PROJECT)/project.pbxproj")"; \
 		[[ "$$objver" == "$(PROJECT_OBJECT_VERSION)" ]] || { echo "error: project.pbxproj objectVersion must stay $(PROJECT_OBJECT_VERSION) so Xcode 16+ can read it, got '$$objver' (newer Xcode rewrites it on save)" >&2; exit 65; }
 	@if (( $$(cut -d. -f1 <<<"$(MINIMUM_IOS_VERSION)") < 16 )); then \
-		hits="$$(grep -rnE 'XPC_(TYPE|ERROR)_[A-Z]|XPC_ARRAY_APPEND' --include='*.swift' "$(ROOT_DIR)/Irisin" "$(ROOT_DIR)/IrisinDaemon" "$(ROOT_DIR)/IrisinInstall" "$(PACKAGE_DIR)/Sources" || true)"; \
+		hits="$$(grep -rnE 'XPC_(TYPE|ERROR)_[A-Z]|XPC_ARRAY_APPEND' --include='*.swift' "$(ROOT_DIR)/Irisin" "$(ROOT_DIR)/IrisinDaemon" "$(ROOT_DIR)/IrisinInstall" "$(ROOT_DIR)/IrisinCLI" "$(PACKAGE_DIR)/Sources" || true)"; \
 		if [[ -n "$$hits" ]]; then \
 			echo "error: XPC SDK macros named in Swift link libswiftXPC.dylib, which iOS $(MINIMUM_IOS_VERSION) does not have; use IrisinXPC:" >&2; \
 			echo "$$hits" >&2; \
 			exit 65; \
 		fi; \
 	fi
-	@grep -rnE 'setuid\(|posix_spawnattr_set_persona|exec-root|giveMeRoot' --include='*.swift' --include='*.m' "$(ROOT_DIR)/Irisin" \
+	@grep -rnE 'setuid\(|posix_spawnattr_set_persona|exec-root|giveMeRoot' --include='*.swift' --include='*.m' "$(ROOT_DIR)/Irisin" "$(ROOT_DIR)/IrisinCLI" \
 		&& { echo "error: the app must never raise privilege; privileged work goes through irisind" >&2; exit 65; } || true
 	@grep -rnE 'NSLocalizedString\(|"[A-Z][A-Z0-9]*(_[A-Z0-9]+)+"' --include='*.swift' "$(ROOT_DIR)/Irisin" \
 		&& { echo "error: user-facing text is a String.LocalizationValue spelled out in English (\"Delete All Downloads\"), never NSLocalizedString or a SHOUTING_KEY" >&2; exit 65; } || true
@@ -193,9 +197,9 @@ check:
 	@grep -rnE 'UIActivityViewController\(|\.init\(activityItems:|[pP]opoverPresentationController' --include='*.swift' "$(ROOT_DIR)/Irisin" \
 		| grep -vF "$(ROOT_DIR)/Irisin/Interface/Components/ShareSheet/ShareSheet.swift:" \
 		&& { echo "error: the share sheet is ShareSheet.present(_:anchor:from:), which always gives the iPad's popover somewhere to point; no UIActivityViewController, .init(activityItems: or popover presentation controller at a call site. Packages/ is not searched: PackageDepiction's PhotoViewerController cannot reach it and points its own sheet at the button that was tapped" >&2; exit 65; } || true
-	@plutil -lint "$(ENTITLEMENTS)" "$(DAEMON_ENTITLEMENTS)" "$(HELPER_ENTITLEMENTS)" "$(LAUNCH_DAEMON)" "$(INFO_PLIST_SUPPLEMENT)"
+	@plutil -lint "$(ENTITLEMENTS)" "$(DAEMON_ENTITLEMENTS)" "$(HELPER_ENTITLEMENTS)" "$(CLI_ENTITLEMENTS)" "$(LAUNCH_DAEMON)" "$(INFO_PLIST_SUPPLEMENT)"
 	@targets="$$(xcodebuild -project "$(PROJECT)" -list)" || exit $$?; \
-	for target in Irisin irisind irisin-install IrisinUnitTest; do \
+	for target in Irisin irisind irisin-install irisin-cli IrisinUnitTest; do \
 		grep -Eq "^[[:space:]]*$$target[[:space:]]*$$" <<<"$$targets" \
 			|| { echo "error: missing Xcode target $$target" >&2; exit 65; }; \
 	done
@@ -281,12 +285,22 @@ build: harness compile
 compile: check
 	@$(MAKE) --no-print-directory _build-ios
 
+# irisin-cli is a build of its own. It and irisin-install are both tools
+# that link libarchive, and Xcode 26 copies a package's framework next to
+# each tool it links into: in one build graph the two copies land on the
+# same path, which it refuses as two commands making one file.
 _build-ios:
 	@echo "==> build $(BUILD_NUMBER)"
 	XCBUILD_LABEL=build-ios $(XCODEBUILD) \
 		$(if $(filter Release,$(CONFIGURATION)),-xcconfig "$(SIZE_CONFIG)") \
 		-configuration "$(CONFIGURATION)" \
 		-scheme "$(SCHEME)" \
+		-destination "generic/platform=iOS" \
+		build
+	XCBUILD_LABEL=build-cli $(XCODEBUILD) \
+		$(if $(filter Release,$(CONFIGURATION)),-xcconfig "$(SIZE_CONFIG)") \
+		-configuration "$(CONFIGURATION)" \
+		-scheme "$(CLI_SCHEME)" \
 		-destination "generic/platform=iOS" \
 		build
 
@@ -305,11 +319,11 @@ deb: build
 	@$(MAKE) --no-print-directory _package-deb
 
 _package-deb:
-	"$(FLOOR_AUDIT)" "$(MINIMUM_IOS_VERSION)" "$(APP_BUNDLE)" "$(DAEMON_BINARY)" "$(HELPER_BINARY)"
+	"$(FLOOR_AUDIT)" "$(MINIMUM_IOS_VERSION)" "$(APP_BUNDLE)" "$(DAEMON_BINARY)" "$(HELPER_BINARY)" "$(CLI_BINARY)"
 	@# A strong import no SDK header declares has no availability for the
 	@# compiler to weak-link by: each one is listed once the floor is known
 	@# to export it, or looked up with dlsym. The list is for iOS 15.0.
-	"$(FLOOR_IMPORTS)" "$(ROOT_DIR)/Scripts/floor-imports.txt" "$(APP_BUNDLE)" "$(DAEMON_BINARY)" "$(HELPER_BINARY)"
+	"$(FLOOR_IMPORTS)" "$(ROOT_DIR)/Scripts/floor-imports.txt" "$(APP_BUNDLE)" "$(DAEMON_BINARY)" "$(HELPER_BINARY)" "$(CLI_BINARY)"
 	"$(DEB_PACKAGER)" \
 		"$(APP_BUNDLE)" \
 		"$(DAEMON_BINARY)" \
@@ -325,7 +339,9 @@ _package-deb:
 		"$(FLAVOR)" \
 		"$(INSTALL_PREFIX)" \
 		"$(MINIMUM_IOS_VERSION)" \
-		"$(HELPER_ENTITLEMENTS)"
+		"$(HELPER_ENTITLEMENTS)" \
+		"$(CLI_BINARY)" \
+		"$(CLI_ENTITLEMENTS)"
 	"$(DEB_VERIFIER)" \
 		"$(DEB_OUTPUT)" \
 		"$(PACKAGE_ID)" \
