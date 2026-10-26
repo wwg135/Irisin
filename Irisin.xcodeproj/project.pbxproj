@@ -14,13 +14,12 @@
 		CA10000000000000000001B0 /* IrisinClient in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000001B1 /* IrisinClient */; };
 		CA10000000000000000001C0 /* AptRepository in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000001C1 /* AptRepository */; };
 		CA10000000000000000001D0 /* Dog in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000001D1 /* Dog */; };
-		CA10000000000000000001E0 /* IrisinAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000001E1 /* IrisinAdapter */; };
 		CA10000000000000000001F0 /* IrisinVendor in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000001F1 /* IrisinVendor */; };
 		CA1000000000000000000200 /* PackageDepiction in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000201 /* PackageDepiction */; };
 		CA1000000000000000000270 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000271 /* SnapKit */; };
 		CA1000000000000000000280 /* SDWebImage in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000281 /* SDWebImage */; };
 		CA1000000000000000000290 /* SPIndicator in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000291 /* SPIndicator */; };
-		CA10000000000000000002A0 /* GlyphixTextFx in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000002A1 /* GlyphixTextFx */; };
+		CA10000000000000000002A0 /* LitextAnimation in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000002A1 /* LitextAnimation */; };
 		CA10000000000000000002E0 /* AlertController in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000002E1 /* AlertController */; };
 		CA10000000000000000002F0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000002F1 /* Runestone */; };
 		CA1000000000000000000300 /* RunestoneLanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000301 /* RunestoneLanguageSupport */; };
@@ -29,7 +28,6 @@
 		CA2000000000000000000040 /* IrisinProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = CA2000000000000000000041 /* IrisinProtocol */; };
 		CA8000000000000000000040 /* IrisinProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000041 /* IrisinProtocol */; };
 		CA8000000000000000000042 /* IrisinClient in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000043 /* IrisinClient */; };
-		CA8000000000000000000044 /* IrisinAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000045 /* IrisinAdapter */; };
 		CA8000000000000000000046 /* IrisinVendor in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000047 /* IrisinVendor */; };
 		CA8000000000000000000048 /* AptRepository in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000049 /* AptRepository */; };
 		CA800000000000000000004A /* AptResolver in Frameworks */ = {isa = PBXBuildFile; productRef = CA800000000000000000004B /* AptResolver */; };
@@ -115,7 +113,6 @@
 				CA10000000000000000001A0 /* IrisinProtocol in Frameworks */,
 				CA1000000000000000000320 /* ScribbleLetter in Frameworks */,
 				CA10000000000000000001B0 /* IrisinClient in Frameworks */,
-				CA10000000000000000001E0 /* IrisinAdapter in Frameworks */,
 				CA10000000000000000001F0 /* IrisinVendor in Frameworks */,
 				CA10000000000000000001C0 /* AptRepository in Frameworks */,
 				A9B601A1DEFA4A3CAE324060 /* AptResolver in Frameworks */,
@@ -126,7 +123,7 @@
 				CA1000000000000000000280 /* SDWebImage in Frameworks */,
 				502F639D304F1353006C2087 /* OrderedCollections in Frameworks */,
 				CA1000000000000000000290 /* SPIndicator in Frameworks */,
-				CA10000000000000000002A0 /* GlyphixTextFx in Frameworks */,
+				CA10000000000000000002A0 /* LitextAnimation in Frameworks */,
 				CA10000000000000000002E0 /* AlertController in Frameworks */,
 				CA10000000000000000002F0 /* Runestone in Frameworks */,
 				CA1000000000000000000300 /* RunestoneLanguageSupport in Frameworks */,
@@ -151,7 +148,6 @@
 			files = (
 				CA8000000000000000000040 /* IrisinProtocol in Frameworks */,
 				CA8000000000000000000042 /* IrisinClient in Frameworks */,
-				CA8000000000000000000044 /* IrisinAdapter in Frameworks */,
 				CA8000000000000000000046 /* IrisinVendor in Frameworks */,
 				CA8000000000000000000048 /* AptRepository in Frameworks */,
 				CA800000000000000000004A /* AptResolver in Frameworks */,
@@ -217,7 +213,6 @@
 			packageProductDependencies = (
 				CA10000000000000000001A1 /* IrisinProtocol */,
 				CA10000000000000000001B1 /* IrisinClient */,
-				CA10000000000000000001E1 /* IrisinAdapter */,
 				CA10000000000000000001F1 /* IrisinVendor */,
 				CA10000000000000000001C1 /* AptRepository */,
 				A9B601A1DEFA4A3CAE324061 /* AptResolver */,
@@ -226,7 +221,7 @@
 				CA1000000000000000000271 /* SnapKit */,
 				CA1000000000000000000281 /* SDWebImage */,
 				CA1000000000000000000291 /* SPIndicator */,
-				CA10000000000000000002A1 /* GlyphixTextFx */,
+				CA10000000000000000002A1 /* LitextAnimation */,
 				CA10000000000000000002E1 /* AlertController */,
 				CA10000000000000000002F1 /* Runestone */,
 				CA1000000000000000000301 /* RunestoneLanguageSupport */,
@@ -296,7 +291,6 @@
 			packageProductDependencies = (
 				CA8000000000000000000041 /* IrisinProtocol */,
 				CA8000000000000000000043 /* IrisinClient */,
-				CA8000000000000000000045 /* IrisinAdapter */,
 				CA8000000000000000000047 /* IrisinVendor */,
 				CA8000000000000000000049 /* AptRepository */,
 				CA800000000000000000004B /* AptResolver */,
@@ -390,7 +384,7 @@
 				CA6000000000000000000001 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				CA6000000000000000000002 /* XCRemoteSwiftPackageReference "SDWebImage" */,
 				CA6000000000000000000003 /* XCRemoteSwiftPackageReference "SPIndicator" */,
-				CA6000000000000000000004 /* XCRemoteSwiftPackageReference "GlyphixTextFx" */,
+				CA6000000000000000000004 /* XCRemoteSwiftPackageReference "Litext" */,
 				CA6000000000000000000009 /* XCRemoteSwiftPackageReference "Dog" */,
 				CA600000000000000000000A /* XCRemoteSwiftPackageReference "AlertController" */,
 				502F2D42304EBFBC006C2087 /* XCRemoteSwiftPackageReference "Then" */,
@@ -903,12 +897,12 @@
 				minimumVersion = 1.6.5;
 			};
 		};
-		CA6000000000000000000004 /* XCRemoteSwiftPackageReference "GlyphixTextFx" */ = {
+		CA6000000000000000000004 /* XCRemoteSwiftPackageReference "Litext" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ktiays/GlyphixTextFx";
+			repositoryURL = "https://github.com/Lakr233/Litext";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.3.7;
+				minimumVersion = 3.6.5;
 			};
 		};
 		CA6000000000000000000009 /* XCRemoteSwiftPackageReference "Dog" */ = {
@@ -977,10 +971,6 @@
 			package = CA6000000000000000000009 /* XCRemoteSwiftPackageReference "Dog" */;
 			productName = Dog;
 		};
-		CA10000000000000000001E1 /* IrisinAdapter */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinAdapter;
-		};
 		CA10000000000000000001F1 /* IrisinVendor */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = IrisinVendor;
@@ -1004,10 +994,10 @@
 			package = CA6000000000000000000003 /* XCRemoteSwiftPackageReference "SPIndicator" */;
 			productName = SPIndicator;
 		};
-		CA10000000000000000002A1 /* GlyphixTextFx */ = {
+		CA10000000000000000002A1 /* LitextAnimation */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CA6000000000000000000004 /* XCRemoteSwiftPackageReference "GlyphixTextFx" */;
-			productName = GlyphixTextFx;
+			package = CA6000000000000000000004 /* XCRemoteSwiftPackageReference "Litext" */;
+			productName = LitextAnimation;
 		};
 		CA10000000000000000002E1 /* AlertController */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1050,10 +1040,6 @@
 		CA8000000000000000000043 /* IrisinClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = IrisinClient;
-		};
-		CA8000000000000000000045 /* IrisinAdapter */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinAdapter;
 		};
 		CA8000000000000000000047 /* IrisinVendor */ = {
 			isa = XCSwiftPackageProductDependency;
