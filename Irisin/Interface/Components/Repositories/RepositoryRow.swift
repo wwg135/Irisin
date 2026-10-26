@@ -131,6 +131,7 @@ class RepositoryRow: UIView {
         let repo = RepositoryCenter.default.obtainImmutableRepository(withUrl: withUrl)
         title.text = repo?.nickName ?? ""
         subtitle.text = repo.map(Self.summary(of:)) ?? ""
+        // pinned badge removed: presentation via section instead
         // one stop per repository, opened as a button; the arrow is drawn,
         // not read, and the dot is read as words
         let health = RepositoryCenter.default.refreshHealth(withUrl: withUrl)

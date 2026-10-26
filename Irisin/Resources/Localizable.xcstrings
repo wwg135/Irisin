@@ -63512,6 +63512,38 @@
         }
       }
     },
+    "Pin" : {
+      "localizations" : {
+        "en" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "Pin" 
+          } 
+        },
+        "zh-Hans" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "置顶" 
+          } 
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "en" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "Unpin" 
+          } 
+        },
+        "zh-Hans" : { 
+          "stringUnit" : { 
+            "state" : "translated", 
+            "value" : "取消置顶" 
+          } 
+        }
+      }
+    },
     "This package is built for %@. This device uses %@. Choose a compatible package, or use Apelin to rebuild this one for this device." : {
       "localizations" : {
         "ar" : {
