@@ -39,13 +39,11 @@ final class LaunchpadController: UIViewController {
     /// The white around the code that a camera needs to find its edge.
     private static let quietZone: CGFloat = 24
 
-    /// The one gap between everything on the screen, the QR code included.
+    /// The gap between the lines of the screen: half a line's height, so
+    /// each line sits one line's spacing from the next. The QR code keeps
+    /// twice it above them.
     private static var spacing: CGFloat {
-        #if os(tvOS)
-            32
-        #else
-            24
-        #endif
+        (UIFont.launchpadText.lineHeight / 2).rounded()
     }
 
     override func viewDidLoad() {
@@ -121,6 +119,7 @@ final class LaunchpadController: UIViewController {
         content.axis = .vertical
         content.alignment = .center
         content.spacing = Self.spacing
+        content.setCustomSpacing(Self.spacing * 2, after: qrGround)
         content.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(content)
 
