@@ -55,6 +55,10 @@ final class PackageQueue {
     /// Lines the queue page closes with: held-back updates, diagnostics.
     private(set) var notices: [String] = []
     private(set) var revision = 0
+    /// A package page's install sheet (`QuickInstallController`) is running
+    /// the queue itself, through Patch and the operation; the queue page
+    /// leaves the plan alone.
+    var quickInstallActive = false
     /// The packages Patch has adapted, each with the tree staging hands the
     /// helper and the control paragraph every solve from then on reads in
     /// place of the adapter's preview; pruned as a package leaves the plan.
