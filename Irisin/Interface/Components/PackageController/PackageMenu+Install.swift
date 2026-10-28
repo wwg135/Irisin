@@ -40,12 +40,12 @@ extension PackageMenu {
         // alert is about to talk them out of
         guard await keeps(selected, from: host) else { return }
         if selected.localFileURL != nil {
-            await enqueue([.install(selected)], from: host)
+            await install([.install(selected)], from: host)
             return
         }
 
         guard selected.isCommercial else {
-            await enqueue([.install(selected)], from: host)
+            await install([.install(selected)], from: host)
             return
         }
         guard let repoUrl = signedInStore(of: selected, from: host) else { return }
@@ -63,7 +63,7 @@ extension PackageMenu {
         // gone before the next sheet: the host cannot present while it is leaving
         await alert.dismissFinishing(animated: true)
         if case let .purchased(purchased) = check {
-            await enqueue([.install(purchased)], from: host)
+            await install([.install(purchased)], from: host)
         } else {
             await present(check, from: host)
         }

@@ -266,6 +266,12 @@ final class QueueController: UIViewController, UITableViewDelegate {
         if stage == .patching || stage == .staging || (failure != nil && failed) {
             return
         }
+        // the package page's install sheet runs this plan
+        guard !manager.quickInstallActive else {
+            watch?.cancel()
+            watch = nil
+            return
+        }
         follow(plan)
     }
 
