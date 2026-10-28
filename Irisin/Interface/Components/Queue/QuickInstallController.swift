@@ -10,6 +10,78 @@ import Combine
 import Dog
 import UIKit
 
+private final class ProgressIndicator: UIView {
+    private let bar = UIProgressView(progressViewStyle: .default).then {
+        $0.progressTintColor = .buttonNormal
+    }
+
+    private let percentageLabel = UILabel().then {
+        $0.font = .monospacedDigit(.caption)
+        $0.textColor = .textSubtitle
+        $0.textAlignment = .center
+    }
+
+    private var fraction: Float = 0
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addSubview(bar)
+        addSubview(percentageLabel)
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            bar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            bar.bottomAnchor.constraint(equalTo: bottomAnchor),
+            bar.heightAnchor.constraint(equalToConstant: 2),
+        ])
+        setProgress(0, animated: false)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: 30)
+    }
+
+    var progressTintColor: UIColor {
+        get { bar.progressTintColor }
+        set { bar.progressTintColor = newValue }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        percentageLabel.sizeToFit()
+        let labelWidth = percentageLabel.bounds.width
+        let center = bounds.width * CGFloat(fraction)
+        let x = min(max(center - labelWidth / 2, 0), max(bounds.width - labelWidth, 0))
+        percentageLabel.frame = CGRect(x: x, y: 0, width: labelWidth, height: bounds.height - 2)
+    }
+
+    func setProgress(_ progress: Float, animated: Bool) {
+        let next = min(max(progress, 0), 1)
+        let percent = NumberFormatter.localizedString(from: NSNumber(value: next), number: .percent)
+        guard animated, next > fraction, window != nil else {
+            fraction = next
+            percentageLabel.text = percent
+            bar.moveProgress(to: next)
+            setNeedsLayout()
+            return
+        }
+
+        layoutIfNeeded()
+        fraction = next
+        percentageLabel.text = percent
+        setNeedsLayout()
+        UIView.animateProgress {
+            self.layoutIfNeeded()
+        }
+        bar.moveProgress(to: next)
+    }
+}
+
 /// An install, update or removal asked for anywhere in the app, done in a
 /// popup centered over the page: the files download with a bar, then the
 /// transaction runs with a bar of its own, then the button says Done. A
@@ -49,9 +121,7 @@ final class QuickInstallController: UIViewController {
         $0.numberOfLines = 0
     }
 
-    private let progressView = UIProgressView(progressViewStyle: .default).then {
-        $0.progressTintColor = .buttonNormal
-    }
+    private let progressIndicator = ProgressIndicator()
 
     private lazy var primaryButton = UIButton(type: .system).then {
         $0.addAction(UIAction { [weak self] _ in self?.primaryTapped() }, for: .touchUpInside)
@@ -133,7 +203,9 @@ final class QuickInstallController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .popupScrim
         nameLabel.text = packageName
-        let stack = UIStackView(arrangedSubviews: [nameLabel, statusLabel, noticesLabel, progressView, primaryButton, logButton])
+        let stack = UIStackView(arrangedSubviews: [
+            nameLabel, statusLabel, noticesLabel, progressIndicator, primaryButton, logButton,
+        ])
         stack.axis = .vertical
         stack.alignment = .fill
         stack.spacing = 16
@@ -234,7 +306,7 @@ final class QuickInstallController: UIViewController {
             .compactMap(\.self)
             .throttle(for: .milliseconds(100), scheduler: DispatchQueue.main, latest: true)
             .sink { [weak self] progress in
-                self?.progressView.setProgress(progress.fraction, animated: true)
+                self?.progressIndicator.setProgress(progress.fraction, animated: true)
             }
             .store(in: &subscriptions)
         // not tied to the task: dismissing the popup leaves the helper running
@@ -252,9 +324,7 @@ final class QuickInstallController: UIViewController {
         let total = statuses.reduce(Int64(0)) { $0 + $1.totalBytes }
         let done = statuses.reduce(Int64(0)) { $0 + ($1.file != nil ? max($1.completedBytes, $1.totalBytes) : $1.completedBytes) }
         let fraction = total > 0 ? Float(min(Double(done) / Double(total), 1)) : 0
-        progressView.setProgress(fraction, animated: true)
-        let percent = NumberFormatter.localizedString(from: NSNumber(value: fraction), number: .percent)
-        statusLabel.text = String(localized: "Downloading…") + " " + percent
+        progressIndicator.setProgress(fraction, animated: true)
     }
 
     // MARK: - Presentation
@@ -267,25 +337,30 @@ final class QuickInstallController: UIViewController {
         switch next {
         case .downloading:
             statusLabel.text = String(localized: "Downloading…")
-            progressView.isHidden = false
-            progressView.setProgress(0, animated: false)
+            progressIndicator.isHidden = false
+            progressIndicator.progressTintColor = .buttonNormal
+            progressIndicator.setProgress(0, animated: false)
             configuration = .tinted()
             configuration.title = String(localized: "Cancel")
         case .preparing:
             statusLabel.text = String(localized: "Preparing…")
-            progressView.setProgress(0, animated: false)
+            progressIndicator.isHidden = true
+            progressIndicator.progressTintColor = .buttonNormal
+            progressIndicator.setProgress(0, animated: false)
             configuration.title = busyTitle
             primaryButton.isEnabled = false
         case .installing:
             statusLabel.text = busyTitle
-            progressView.isHidden = false
+            progressIndicator.isHidden = false
+            progressIndicator.progressTintColor = .buttonNormal
+            progressIndicator.setProgress(0, animated: false)
             configuration.title = busyTitle
             primaryButton.isEnabled = false
         case let .finished(ending):
             statusLabel.text = String(localized: "Operation completed.")
-            progressView.isHidden = false
-            progressView.setProgress(1, animated: true)
-            progressView.progressTintColor = .operationSucceeded
+            progressIndicator.isHidden = false
+            progressIndicator.progressTintColor = .operationSucceeded
+            progressIndicator.setProgress(1, animated: true)
             configuration.baseBackgroundColor = .operationSucceeded
             configuration.title = ending == .reloadHomeScreen
                 ? String(localized: "Reload Home Screen")
@@ -294,7 +369,7 @@ final class QuickInstallController: UIViewController {
             UIAccessibility.post(notification: .announcement, argument: String(localized: "Operation completed."))
         case let .failed(reason):
             statusLabel.text = reason
-            progressView.isHidden = true
+            progressIndicator.isHidden = true
             configuration.baseBackgroundColor = .operationFailed
             configuration.title = String(localized: "Done")
             primaryButton.isEnabled = true
