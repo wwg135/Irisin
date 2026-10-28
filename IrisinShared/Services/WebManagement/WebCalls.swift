@@ -279,7 +279,13 @@ enum WebCalls {
         }
         let meta = package.latestMetadata ?? [:]
         let device = PackagedArchitecture.architecture
-        let versions = Set(all.flatMap { ($0.versions(builtFor: device) ?? $0).payload.keys })
+        let offeredVersions = all.flatMap { offer in
+            offer.payload.compactMap { version, metadata -> String? in
+                let architectures = Package.architectures(in: metadata)
+                return architectures.contains("all") || architectures.contains(device) ? version : nil
+            }
+        }
+        let versions = Set(offeredVersions)
             .sorted { DebianVersion.compare($0, $1) > 0 }
         let description = meta["description"] ?? ""
         let lines = description.components(separatedBy: "\n")
@@ -287,7 +293,7 @@ enum WebCalls {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .map { $0 == "." ? "" : $0 }
             .joined(separator: "\n")
-        return .result(.object([
+        let result: [String: JSONValue] = [
             "id": .string(identity),
             "name": .string(PackageCenter.default.name(of: package)),
             "version": .string(package.latestVersion ?? ""),
@@ -304,7 +310,8 @@ enum WebCalls {
             "installedSize": .integer((Int(meta["installed-size"] ?? "") ?? 0) * 1024),
             "homepage": meta["homepage"].map(JSONValue.string) ?? .null,
             "paid": .bool(isPaid(package)),
-        ]))
+        ]
+        return .result(.object(result))
     }
 
     private static func isPaid(_ package: Package) -> Bool {
