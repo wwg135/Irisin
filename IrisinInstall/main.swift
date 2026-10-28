@@ -37,11 +37,7 @@ func writeEvent(_ event: InstallerEvent) {
     writeAll(STDOUT_FILENO, Data((InstallerOutput.encode(event) + "\n").utf8))
 }
 
-// A helper outside a bootstrap this system serves is misplaced too: tvOS
-// serves RootHide alone (`BootstrapSupport`).
-guard let installRoot = ProcessPath.installRoot(ofCurrentProcessAt: IrisinWire.helperPath),
-      BootstrapSupport.serves(installRoot: installRoot)
-else {
+guard let installRoot = ProcessPath.installRoot(ofCurrentProcessAt: IrisinWire.helperPath) else {
     // No log yet: there is no install root to keep one under. The pipe
     // still gets a proper ending.
     for event in [InstallerEvent.failure(.helperMisplaced), .exit(EX_CONFIG)] {

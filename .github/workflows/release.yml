@@ -83,7 +83,6 @@ jobs:
           sha256sum \
             "wiki.qaq.irisin_${version}_iphoneos-arm64e.deb" \
             "wiki.qaq.irisin_${version}_iphoneos-arm64.deb" \
-            "wiki.qaq.irisin_${version}_appletvos-arm64e.deb" \
             "Irisin_${version}_dSYMs.zip" > SHA256SUMS
           cat SHA256SUMS
       - name: Publish release
@@ -104,7 +103,6 @@ jobs:
           fi
           files=("build/Packages/wiki.qaq.irisin_${version}_iphoneos-arm64e.deb"
                  "build/Packages/wiki.qaq.irisin_${version}_iphoneos-arm64.deb"
-                 "build/Packages/wiki.qaq.irisin_${version}_appletvos-arm64e.deb"
                  "build/Packages/Irisin_${version}_dSYMs.zip"
                  "build/Packages/SHA256SUMS")
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then

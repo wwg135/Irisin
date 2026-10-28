@@ -7,13 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CA90000000000000000000A0 /* IrisinProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000A1 /* IrisinProtocol */; };
-		CA90000000000000000000A2 /* IrisinClient in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000A3 /* IrisinClient */; };
-		CA90000000000000000000A4 /* IrisinVendor in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000A5 /* IrisinVendor */; };
-		CA90000000000000000000A6 /* AptRepository in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000A7 /* AptRepository */; };
-		CA90000000000000000000A8 /* AptResolver in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000A9 /* AptResolver */; };
-		CA90000000000000000000AA /* Dog in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000AB /* Dog */; };
-		CA90000000000000000000AC /* IrisinWeb in Frameworks */ = {isa = PBXBuildFile; productRef = CA90000000000000000000AD /* IrisinWeb */; };
 		502F2D44304EBFBC006C2087 /* Then in Frameworks */ = {isa = PBXBuildFile; productRef = 502F2D43304EBFBC006C2087 /* Then */; };
 		502F639D304F1353006C2087 /* OrderedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = 502F639C304F1353006C2087 /* OrderedCollections */; };
 		A9B601A1DEFA4A3CAE324060 /* AptResolver in Frameworks */ = {isa = PBXBuildFile; productRef = A9B601A1DEFA4A3CAE324061 /* AptResolver */; };
@@ -31,7 +24,7 @@
 		CA10000000000000000002F0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = CA10000000000000000002F1 /* Runestone */; };
 		CA1000000000000000000300 /* RunestoneLanguageSupport in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000301 /* RunestoneLanguageSupport */; };
 		CA1000000000000000000310 /* RunestoneThemeSupport in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000311 /* RunestoneThemeSupport */; };
-		CA1000000000000000000330 /* IrisinWeb in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000331 /* IrisinWeb */; };
+		CA1000000000000000000320 /* ScribbleLetter in Frameworks */ = {isa = PBXBuildFile; productRef = CA1000000000000000000321 /* ScribbleLetter */; };
 		CA2000000000000000000040 /* IrisinProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = CA2000000000000000000041 /* IrisinProtocol */; };
 		CA8000000000000000000040 /* IrisinProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000041 /* IrisinProtocol */; };
 		CA8000000000000000000042 /* IrisinClient in Frameworks */ = {isa = PBXBuildFile; productRef = CA8000000000000000000043 /* IrisinClient */; };
@@ -68,7 +61,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		CA9000000000000000000001 /* irisin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = irisin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA1000000000000000000001 /* irisin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = irisin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA2000000000000000000001 /* irisind */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = irisind; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA8000000000000000000001 /* irisin-cli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "irisin-cli"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -76,37 +68,10 @@
 		CA7000000000000000000001 /* IrisinUnitTest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IrisinUnitTest.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		CA9000000000000000000003 /* Exceptions for "Irisin" folder in "IrisinLaunchpad" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Resources/Environments/default-list-appletvos-arm64e.plist",
-				"Resources/Environments/default-list-iphoneos-arm64.plist",
-				"Resources/Environments/default-list-iphoneos-arm64e.plist",
-				"Resources/Environments/default-list-managed.plist",
-				Resources/Localizable.xcstrings,
-			);
-			target = CA9000000000000000000010 /* IrisinLaunchpad */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CA1000000000000000000002 /* Irisin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				CA9000000000000000000003 /* Exceptions for "Irisin" folder in "IrisinLaunchpad" target */,
-			);
 			path = Irisin;
-			sourceTree = "<group>";
-		};
-		CA9000000000000000000002 /* IrisinLaunchpad */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = IrisinLaunchpad;
-			sourceTree = "<group>";
-		};
-		CA9000000000000000000004 /* IrisinShared */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = IrisinShared;
 			sourceTree = "<group>";
 		};
 		CA2000000000000000000002 /* IrisinDaemon */ = {
@@ -142,23 +107,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CA9000000000000000000012 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			files = (
-				CA90000000000000000000A0 /* IrisinProtocol in Frameworks */,
-				CA90000000000000000000A2 /* IrisinClient in Frameworks */,
-				CA90000000000000000000A4 /* IrisinVendor in Frameworks */,
-				CA90000000000000000000A6 /* AptRepository in Frameworks */,
-				CA90000000000000000000A8 /* AptResolver in Frameworks */,
-				CA90000000000000000000AA /* Dog in Frameworks */,
-				CA90000000000000000000AC /* IrisinWeb in Frameworks */,
-			);
-		};
 		CA1000000000000000000012 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				CA10000000000000000001A0 /* IrisinProtocol in Frameworks */,
-				CA1000000000000000000330 /* IrisinWeb in Frameworks */,
+				CA1000000000000000000320 /* ScribbleLetter in Frameworks */,
 				CA10000000000000000001B0 /* IrisinClient in Frameworks */,
 				CA10000000000000000001F0 /* IrisinVendor in Frameworks */,
 				CA10000000000000000001C0 /* AptRepository in Frameworks */,
@@ -215,8 +168,6 @@
 				CA4000000000000000000001 /* Configuration */,
 				CA4000000000000000000002 /* Packaging */,
 				CA1000000000000000000002 /* Irisin */,
-				CA9000000000000000000004 /* IrisinShared */,
-				CA9000000000000000000002 /* IrisinLaunchpad */,
 				CA2000000000000000000002 /* IrisinDaemon */,
 				CA3000000000000000000002 /* IrisinInstall */,
 				CA8000000000000000000002 /* IrisinCLI */,
@@ -229,7 +180,6 @@
 			isa = PBXGroup;
 			children = (
 				CA1000000000000000000001 /* irisin.app */,
-				CA9000000000000000000001 /* irisin.app */,
 				CA2000000000000000000001 /* irisind */,
 				CA3000000000000000000001 /* irisin-install */,
 				CA8000000000000000000001 /* irisin-cli */,
@@ -241,37 +191,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CA9000000000000000000010 /* IrisinLaunchpad */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = CA9000000000000000000030 /* Build configuration list for PBXNativeTarget "IrisinLaunchpad" */;
-			buildPhases = (
-				CA9000000000000000000011 /* Sources */,
-				CA9000000000000000000012 /* Frameworks */,
-				CA9000000000000000000013 /* Resources */,
-				CA9000000000000000000015 /* Build Web UI */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				CA9000000000000000000002 /* IrisinLaunchpad */,
-				CA9000000000000000000004 /* IrisinShared */,
-			);
-			name = IrisinLaunchpad;
-			packageProductDependencies = (
-				CA90000000000000000000A1 /* IrisinProtocol */,
-				CA90000000000000000000A3 /* IrisinClient */,
-				CA90000000000000000000A5 /* IrisinVendor */,
-				CA90000000000000000000A7 /* AptRepository */,
-				CA90000000000000000000A9 /* AptResolver */,
-				CA90000000000000000000AB /* Dog */,
-				CA90000000000000000000AD /* IrisinWeb */,
-			);
-			productName = irisin;
-			productReference = CA9000000000000000000001 /* irisin.app */;
-			productType = "com.apple.product-type.application";
-		};
 		CA1000000000000000000010 /* Irisin */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CA1000000000000000000030 /* Build configuration list for PBXNativeTarget "Irisin" */;
@@ -279,7 +198,6 @@
 				CA1000000000000000000011 /* Sources */,
 				CA1000000000000000000012 /* Frameworks */,
 				CA1000000000000000000013 /* Resources */,
-				CA1000000000000000000015 /* Build Web UI */,
 				CA1000000000000000000014 /* Collect Licenses */,
 			);
 			buildRules = (
@@ -290,7 +208,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				CA1000000000000000000002 /* Irisin */,
-				CA9000000000000000000004 /* IrisinShared */,
 			);
 			name = Irisin;
 			packageProductDependencies = (
@@ -311,7 +228,7 @@
 				CA1000000000000000000311 /* RunestoneThemeSupport */,
 				502F2D43304EBFBC006C2087 /* Then */,
 				502F639C304F1353006C2087 /* OrderedCollections */,
-				CA1000000000000000000331 /* IrisinWeb */,
+				CA1000000000000000000321 /* ScribbleLetter */,
 			);
 			productName = irisin;
 			productReference = CA1000000000000000000001 /* irisin.app */;
@@ -414,9 +331,6 @@
 				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					CA9000000000000000000010 = {
-						CreatedOnToolsVersion = 27.0;
-					};
 					CA1000000000000000000010 = {
 						CreatedOnToolsVersion = 27.0;
 					};
@@ -467,7 +381,6 @@
 				CA5000000000000000000002 /* XCLocalSwiftPackageReference "Packages/AptRepository" */,
 				CA5000000000000000000006 /* XCLocalSwiftPackageReference "Packages/PackageDepiction" */,
 				CA5000000000000000000007 /* XCLocalSwiftPackageReference "Packages/Runestone" */,
-				CA5000000000000000000009 /* XCLocalSwiftPackageReference "Packages/IrisinWeb" */,
 				CA6000000000000000000001 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				CA6000000000000000000002 /* XCRemoteSwiftPackageReference "SDWebImage" */,
 				CA6000000000000000000003 /* XCRemoteSwiftPackageReference "SPIndicator" */,
@@ -476,6 +389,7 @@
 				CA600000000000000000000A /* XCRemoteSwiftPackageReference "AlertController" */,
 				502F2D42304EBFBC006C2087 /* XCRemoteSwiftPackageReference "Then" */,
 				502F639B304F1353006C2087 /* XCRemoteSwiftPackageReference "swift-collections" */,
+				CA600000000000000000000C /* XCRemoteSwiftPackageReference "ScribbleLetterView" */,
 				CA600000000000000000000D /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -487,17 +401,11 @@
 				CA3000000000000000000010 /* irisin-install */,
 				CA8000000000000000000010 /* irisin-cli */,
 				CA7000000000000000000010 /* IrisinUnitTest */,
-				CA9000000000000000000010 /* IrisinLaunchpad */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CA9000000000000000000013 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			files = (
-			);
-		};
 		CA1000000000000000000013 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
@@ -511,28 +419,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		CA9000000000000000000015 /* Build Web UI */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			name = "Build Web UI";
-			shellPath = /bin/sh;
-			shellScript = (
-				"exec \"$SRCROOT/Scripts/build-webui.sh\"",
-				"",
-			);
-			showEnvVarsInLog = 0;
-		};
-		CA1000000000000000000015 /* Build Web UI */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			name = "Build Web UI";
-			shellPath = /bin/sh;
-			shellScript = (
-				"exec \"$SRCROOT/Scripts/build-webui.sh\"",
-				"",
-			);
-			showEnvVarsInLog = 0;
-		};
 		CA1000000000000000000014 /* Collect Licenses */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -549,11 +435,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CA9000000000000000000011 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			files = (
-			);
-		};
 		CA1000000000000000000011 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -600,68 +481,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		CA9000000000000000000031 /* Debug configuration for PBXNativeTarget "IrisinLaunchpad" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletv*]" = "App Icon & Top Shelf Image";
-				CODE_SIGN_STYLE = Automatic;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Irisin;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Irisin serves a page on your local network, so a browser on another device can manage this one.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
-				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/.jbroot/usr/lib",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.irisin;
-				PRODUCT_MODULE_NAME = IrisinLaunchpad;
-				PRODUCT_NAME = irisin;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator xros xrsimulator";
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "3,7";
-			};
-			name = Debug;
-		};
-		CA9000000000000000000032 /* Release configuration for PBXNativeTarget "IrisinLaunchpad" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletv*]" = "App Icon & Top Shelf Image";
-				CODE_SIGN_STYLE = Automatic;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Irisin;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Irisin serves a page on your local network, so a browser on another device can manage this one.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
-				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/.jbroot/usr/lib",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.irisin;
-				PRODUCT_MODULE_NAME = IrisinLaunchpad;
-				PRODUCT_NAME = irisin;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "appletvos appletvsimulator xros xrsimulator";
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "3,7";
-			};
-			name = Release;
-		};
 		CA0000000000000000000031 /* Debug configuration for PBXProject "Irisin" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = CA4000000000000000000001 /* Configuration */;
@@ -855,7 +674,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.irisind;
 				PRODUCT_NAME = irisind;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator appletvos";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_VERSION = 6.0;
 			};
@@ -869,7 +687,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.irisind;
 				PRODUCT_NAME = irisind;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator appletvos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_VERSION = 6.0;
 			};
@@ -884,7 +701,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "wiki.qaq.irisin-install";
 				PRODUCT_NAME = "irisin-install";
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator appletvos";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_VERSION = 6.0;
 			};
@@ -899,7 +715,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "wiki.qaq.irisin-install";
 				PRODUCT_NAME = "irisin-install";
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator appletvos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_VERSION = 6.0;
 			};
@@ -972,14 +787,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CA9000000000000000000030 /* Build configuration list for PBXNativeTarget "IrisinLaunchpad" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				CA9000000000000000000031 /* Debug configuration for PBXNativeTarget "IrisinLaunchpad" */,
-				CA9000000000000000000032 /* Release configuration for PBXNativeTarget "IrisinLaunchpad" */,
-			);
-			defaultConfigurationName = Release;
-		};
 		CA0000000000000000000030 /* Build configuration list for PBXProject "Irisin" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1046,10 +853,6 @@
 		CA5000000000000000000007 /* XCLocalSwiftPackageReference "Packages/Runestone" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Runestone;
-		};
-		CA5000000000000000000009 /* XCLocalSwiftPackageReference "Packages/IrisinWeb" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/IrisinWeb;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -1118,6 +921,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		CA600000000000000000000C /* XCRemoteSwiftPackageReference "ScribbleLetterView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/yellowplushq/ScribbleLetterView";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.1;
+			};
+		};
 		CA600000000000000000000D /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
@@ -1129,35 +940,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CA90000000000000000000A1 /* IrisinProtocol */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinProtocol;
-		};
-		CA90000000000000000000A3 /* IrisinClient */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinClient;
-		};
-		CA90000000000000000000A5 /* IrisinVendor */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinVendor;
-		};
-		CA90000000000000000000A7 /* AptRepository */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AptRepository;
-		};
-		CA90000000000000000000A9 /* AptResolver */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AptResolver;
-		};
-		CA90000000000000000000AB /* Dog */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CA6000000000000000000009 /* XCRemoteSwiftPackageReference "Dog" */;
-			productName = Dog;
-		};
-		CA90000000000000000000AD /* IrisinWeb */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = IrisinWeb;
-		};
 		502F2D43304EBFBC006C2087 /* Then */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 502F2D42304EBFBC006C2087 /* XCRemoteSwiftPackageReference "Then" */;
@@ -1234,9 +1016,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = RunestoneThemeSupport;
 		};
-		CA1000000000000000000331 /* IrisinWeb */ = {
+		CA1000000000000000000321 /* ScribbleLetter */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = IrisinWeb;
+			package = CA600000000000000000000C /* XCRemoteSwiftPackageReference "ScribbleLetterView" */;
+			productName = ScribbleLetter;
 		};
 		CA2000000000000000000041 /* IrisinProtocol */ = {
 			isa = XCSwiftPackageProductDependency;

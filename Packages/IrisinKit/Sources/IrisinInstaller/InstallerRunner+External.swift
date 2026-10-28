@@ -98,19 +98,12 @@ extension InstallerRunner {
     }
 
     /// The architecture dpkg on this bootstrap installs, or nil where any
-    /// goes (the harness). RootHide on Apple TV has one of its own.
+    /// goes (the harness).
     private var nativeArchitecture: String? {
         switch layout.kind {
-        case .none:
-            nil
-        case .rootless:
-            BootstrapArchitecture.rootless.rawValue
-        case .roothide:
-            #if os(tvOS)
-                BootstrapArchitecture.appleTVRoothide.rawValue
-            #else
-                BootstrapArchitecture.roothide.rawValue
-            #endif
+        case .none: nil
+        case .rootless: "iphoneos-arm64"
+        case .roothide: "iphoneos-arm64e"
         }
     }
 

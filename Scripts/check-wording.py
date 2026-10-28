@@ -55,9 +55,7 @@ def main() -> int:
     root = Path(sys.argv[1])
     resources = root / "Irisin" / "Resources"
     hits = []
-    catalogs = sorted(resources.glob("*.xcstrings"))
-    catalogs += sorted((root / "IrisinLaunchpad" / "Resources").glob("*.xcstrings"))
-    for catalog in catalogs:
+    for catalog in sorted(resources.glob("*.xcstrings")):
         hits += [
             f"{catalog.relative_to(root)} [{locale}]: {value}"
             for locale, value in catalog_values(catalog)
@@ -66,9 +64,6 @@ def main() -> int:
     texts = sorted((resources / "Settings.bundle").rglob("*.strings"))
     texts += sorted((resources / "Settings.bundle").rglob("*.plist"))
     texts.append(root / "Packaging" / "DEBIAN" / "control")
-    texts.append(root / "Packaging" / "AppleTV" / "control")
-    # the browser page's own words, English and Chinese
-    texts.append(root / "WebUI" / "src" / "i18n.ts")
     for pages in ("Manual", "Site"):
         texts += web_pages(root / "Documentation" / pages)
     for text in texts:
