@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "DERIVED_DATA=$RUNNER_TEMP/irisin-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          echo "DERIVED_DATA=$HOME/Library/Caches/irisin-deriveddata" >> "$GITHUB_ENV"
 
       - name: Check out repository
         uses: actions/checkout@v7.0.1
@@ -87,6 +87,15 @@ jobs:
           if (( ${#formulae[@]} > 0 )); then
             brew install "${formulae[@]}"
           fi
+
+      - name: Cache derived data
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DERIVED_DATA }}
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('**/Package.resolved', 'Configuration/*.xcconfig') }}-${{ github.run_id }}
+          restore-keys: |
+            deriveddata-${{ runner.os }}-${{ hashFiles('**/Package.resolved', 'Configuration/*.xcconfig') }}-
+            deriveddata-${{ runner.os }}-
 
       - name: Compile
         run: make compile CONFIGURATION=Release DERIVED_DATA="$DERIVED_DATA" BUILD_NUMBER="$GITHUB_RUN_NUMBER"
