@@ -145,7 +145,8 @@ public struct Repository: TableCodable, Hashable, Identifiable, Sendable {
             distribution: distribution,
             components: components,
             release: metaRelease,
-            architectures: AptEnvironment.current.indexArchitectures
+            architectures: AptEnvironment.current.indexArchitectures,
+            installable: AptEnvironment.current.installableArchitectures
         )
     }
 
@@ -158,15 +159,25 @@ public struct Repository: TableCodable, Hashable, Identifiable, Sendable {
     /// Release that lists none of them, or says nothing, leaves the whole
     /// list to be probed. `all` is never a directory of its own.
     ///
-    /// Each architecture is one entry, one index per component: the
-    /// device's own first, the rest reached only when nothing before them
-    /// answered. A suite with nothing that installs here lists nothing.
+    /// Every architecture in `installable` goes in the first entry, the
+    /// device's own ahead of those an adapter rewrites, one index per
+    /// component each: a suite with three packages built for this bootstrap
+    /// and three hundred for the one next to it offers them all, and
+    /// `invokePackages` picks the build of each version. An entry is read
+    /// whole or not at all, and two directories are not published as one:
+    /// where the Release lists one the server does not have, or has an
+    /// older copy of, each is asked again on its own. The rest follow one
+    /// entry each, reached only when nothing before them answered, so a
+    /// suite with nothing that installs here still lists what it has.
+    /// An entry is asked for under one compression at a time, so
+    /// directories that share none are read through the single entries.
     static func packageIndexUrls(
         suiteUrl: URL,
         distribution: String?,
         components: [String],
         release: [String: String],
-        architectures: [String]
+        architectures: [String],
+        installable: Set<String>
     ) -> [[URL]] {
         guard let distribution, !distribution.hasSuffix("/") else {
             return [[suiteUrl.appendingPathComponent("Packages")]]
@@ -176,12 +187,18 @@ public struct Repository: TableCodable, Hashable, Identifiable, Sendable {
             .map(String.init) ?? []
         let named = architectures.filter(offered.contains)
         let chain = named.isEmpty ? architectures : named
-        return chain.map { architecture in
-            components.map {
-                suiteUrl
-                    .appendingPathComponent($0)
-                    .appendingPathComponent("binary-\(architecture)")
-                    .appendingPathComponent("Packages")
+        let together = chain.filter(installable.contains)
+        let entries = (together.count > 1 ? [together] : [])
+            + together.map { [$0] }
+            + chain.filter { !installable.contains($0) }.map { [$0] }
+        return entries.map { entry in
+            entry.flatMap { architecture in
+                components.map {
+                    suiteUrl
+                        .appendingPathComponent($0)
+                        .appendingPathComponent("binary-\(architecture)")
+                        .appendingPathComponent("Packages")
+                }
             }
         }
     }
