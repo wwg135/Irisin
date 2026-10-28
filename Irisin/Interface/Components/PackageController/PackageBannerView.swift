@@ -165,7 +165,7 @@ class PackageBannerView: UIView {
         // for the explanation
         button.showsMenuAsPrimaryAction = obtainQuickAction() == nil
             && !opensQueue
-            && package.isSupportedOnDevice
+            && (package.isSupportedOnDevice || package.localFileURL != nil)
 
         // now we need to update button size from localized string
         var width = button.intrinsicContentSize.width
@@ -187,7 +187,7 @@ class PackageBannerView: UIView {
     }
 
     func grabButtonString() -> String {
-        if !package.isSupportedOnDevice {
+        if !package.isSupportedOnDevice, package.localFileURL == nil {
             return String(localized: "Unsupported").uppercased()
         }
         if PackageQueue.shared.isQueued(package.identity) {
