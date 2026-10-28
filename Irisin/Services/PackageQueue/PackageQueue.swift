@@ -54,6 +54,9 @@ final class PackageQueue {
     /// Lines the queue page closes with: held-back updates, diagnostics.
     private(set) var notices: [String] = []
     private(set) var revision = 0
+    /// The plan a package page's install sheet (`QuickInstallController`)
+    /// downloads and runs itself; the queue page leaves it alone.
+    var quickInstallPlan: UUID?
 
     /// The Settings switch: a plan may remove Essential and Protected
     /// packages, and the helper is told to let them go. A queued plan is

@@ -208,6 +208,16 @@ enum PackageMenu {
 }
 
 extension PackageMenu {
+    /// An install or update asked for on the package's page: when it is the
+    /// whole change, it downloads and installs in a sheet right there.
+    /// Anything else (other queued work, removals, notices, a refusal)
+    /// goes through the change sheet as before.
+    static func install(_ actions: [ResolutionAction], from host: UIViewController) async {
+        guard await QuickInstallController.start(actions, from: host) else {
+            return await enqueue(actions, from: host)
+        }
+    }
+
     /// A package row's long press: the package page as the preview, and the
     /// page's own menu.
     static func contextMenu(

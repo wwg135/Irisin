@@ -256,6 +256,12 @@ final class QueueController: UIViewController, UITableViewDelegate {
         if stage == .staging || (failure != nil && failed) {
             return
         }
+        // the package page's install sheet runs this plan
+        guard manager.quickInstallPlan != plan.id else {
+            watch?.cancel()
+            watch = nil
+            return
+        }
         follow(plan)
     }
 
@@ -647,7 +653,7 @@ final class QueueController: UIViewController, UITableViewDelegate {
 
     /// Waits until every one of these packages is on disk, or answers the
     /// first download's failure. Stops when `plan` is no longer the queue's.
-    private static func awaitDownloads(
+    static func awaitDownloads(
         of packages: [Package],
         in plan: UUID,
         progress: @MainActor () -> Void
