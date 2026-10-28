@@ -43,12 +43,13 @@ extension PackageBannerView {
 
     /// What a tap does: the first eligible action for a file or a package
     /// that is not installed, Update for one that is and has a newer
-    /// version. nil when the tap opens the menu instead.
+    /// version, Reinstall for one at the offered version. nil when the tap opens the menu instead.
     func obtainQuickAction() -> PackageMenu.Item? {
         let actions = PackageMenu.eligibleActions(for: package)
         guard package.localFileURL == nil,
               PackageCenter.default.obtainPackageInstallationInfo(with: package.identity) != nil
         else { return actions.first }
         return actions.first { $0.descriptor == .update }
+            ?? actions.first { $0.descriptor == .reinstall }
     }
 }
