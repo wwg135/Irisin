@@ -52,13 +52,9 @@ final class PackageQueue {
     /// Why the plan could not follow the packages that changed under it.
     /// The old plan stays on screen and cannot be started.
     private(set) var blocked: String?
-    /// Lines the queue page closes with: held-back updates, diagnostics.
+    /// Notices to show with the operation: held-back updates, diagnostics.
     private(set) var notices: [String] = []
     private(set) var revision = 0
-    /// A package page's install sheet (`QuickInstallController`) is running
-    /// the queue itself, through Patch and the operation; the queue page
-    /// leaves the plan alone.
-    var quickInstallActive = false
     /// The packages Patch has adapted, each with the tree staging hands the
     /// helper and the control paragraph every solve from then on reads in
     /// place of the adapter's preview; pruned as a package leaves the plan.
@@ -188,8 +184,7 @@ final class PackageQueue {
     }
 
     /// The adapted packages the plan installs that Patch has not been
-    /// through. The queue page offers Patch while there are any and Execute
-    /// once there are none.
+    /// through. The operation popup patches them before staging.
     var unpatched: [Package] {
         guard let plan else { return [] }
         return plan.install.filter { plan.snapshot.adapts($0) && patched[$0] == nil }
@@ -321,67 +316,6 @@ final class PackageQueue {
             try? FileManager.default.removeItem(at: directory)
             throw error
         }
-    }
-
-    /// The queue touches the package: asked for, ticked, or brought in.
-    func isQueued(_ identity: String) -> Bool {
-        actions.contains { $0.identity == identity }
-            || cleanup.contains(identity)
-            || plan.map { ($0.install + $0.remove).contains { $0.identity == identity } } ?? false
-    }
-
-    /// The package the queue installs, including its source file.
-    func queuedPackage(of identity: String) -> Package? {
-        plan?.install.first { $0.identity == identity }
-    }
-
-    /// Solves the queue without the package: its own request or tick, or
-    /// the requests that bring it in. `cleanup` replaces the ticked set.
-    func proposeWithdrawal(
-        of identity: String,
-        cleanup: Set<String>? = nil
-    ) async -> Result<Proposal, ResolutionFailure> {
-        let dropped = await requests(bringing: identity)
-        return await proposal(
-            actions: actions.filter { !dropped.contains($0.identity) },
-            cleanup: (cleanup ?? self.cleanup).subtracting([identity]),
-            notices: []
-        )
-    }
-
-    /// The queued requests the package is in the plan for.
-    private func requests(bringing identity: String) async -> Set<String> {
-        let queued = Set(actions.map(\.identity))
-        guard !queued.contains(identity), let plan else { return [identity] }
-        if plan.install.contains(where: { $0.identity == identity }) {
-            // up the dependency edges to the requests that need it
-            var found: Set<String> = []
-            var visited: Set<String> = []
-            var pending = [identity]
-            while let name = pending.popLast() {
-                for dependent in plan.requiredBy[name] ?? [] where visited.insert(dependent).inserted {
-                    if queued.contains(dependent) {
-                        found.insert(dependent)
-                    } else {
-                        pending.append(dependent)
-                    }
-                }
-            }
-            return found
-        }
-        // ponytail: the plan does not say why a package leaves, so each
-        // request is solved alone; a removal reason from the resolver
-        // replaces this if long queues make it slow
-        var found: Set<String> = []
-        for action in actions {
-            let alone = await proposal(actions: [action], cleanup: [], notices: [])
-            if case let .success(alone) = alone,
-               alone.plan?.remove.contains(where: { $0.identity == identity }) == true
-            {
-                found.insert(action.identity)
-            }
-        }
-        return found
     }
 
     func clear() {

@@ -119,7 +119,18 @@ class UpdateController: UIViewController, UITableViewDelegate {
 
     @objc
     func updateAll() {
-        Task { await QueueChangeController.show(.updateAll, from: self) }
+        Task {
+            switch await PackageQueue.shared.updateAllActions() {
+            case let .success(update) where !update.actions.isEmpty:
+                await PackageMenu.install(update.actions, notices: update.notices, from: self)
+            case let .success(update) where !update.notices.isEmpty:
+                presentNotice(title: "Updates", message: update.notices.joined(separator: "\n"))
+            case let .failure(failure):
+                presentNotice(title: "Error", message: failure.message)
+            default:
+                break
+            }
+        }
     }
 
     func reload() {

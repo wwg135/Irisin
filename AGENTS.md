@@ -216,22 +216,13 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   string the resolver is handed: `resolveAdaptedPackageManifestPreview`
   answers with the control paragraph it expects to leave, from the
   catalogue's alone, and the resolver solves an adapted package as that
-  says before anything downloads. The file may show otherwise, so the
-  queue page offers Patch in place of Execute while the plan installs an
-  adapted package that has not been through it: `PackageQueue.patch` waits
-  for the files, adapts each once, keeps the tree for staging (which hands
-  it to the helper as it is and adapts only what Patch never saw) and
-  solves again with the control paragraphs `adapt` wrote, so
-  rootless-compat and patchloader leave a queue of themes before it runs.
-  A queue that is not what it was says so in an alert, and the button is
-  Execute from then on. On the same file the plan and the install never
-  disagree, since the paragraph solved with is the one installed. The queue
-  asks before an adapted package joins it (Compatibility Mode), and its
-  sheet says the queue may change at Patch.
-  While files download the queue's button reads Queue Install, and once
-  tapped Cancel Auto Install in the delete colour, which takes it back. On
-  a system whose status has no `dpkg` the tap asks first
-  (`QueueInstallChecks`): Bootstrap Install where the plan allows it,
+  says before anything downloads. `PackageMenu.install` starts the centered
+  `QuickInstallController` popup for installs, updates and removals; there
+  is no native queue page, tab or floating queue bar. The popup downloads,
+  adapts each package once through `PackageQueue.patch`, solves again with
+  the control paragraphs `adapt` wrote, and stages the resulting plan as-is.
+  The plan solved with is the one installed. A system with no `dpkg` still
+  asks (`QueueInstallChecks`): Bootstrap Install where the plan allows it,
   Install Anyway, which reads the files' `control.tar` member names
   (`ArchiveStream.debianControlMembers`) and names the packages that run
   maintainer scripts before anything is staged, or Cancel.

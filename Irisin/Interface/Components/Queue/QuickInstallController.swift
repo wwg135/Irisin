@@ -5,21 +5,17 @@
 
 import AptRepository
 import AptResolver
+import AlertController
 import Combine
 import Dog
 import UIKit
 
-/// An install or update asked for on the package's page, done in a sheet
-/// over that page: the files download with a bar, then the transaction runs
-/// with a bar of its own, then the button says Done. A package built for
-/// another bootstrap is patched between the two, as Patch on the queue page
-/// would, and what that adds to the plan (the compat layer) downloads too.
-/// The change is still the queue's (`PackageQueue` solves, commits and starts the downloads), so
-/// everything the queue checks is checked; the sheet only takes the steps
-/// the queue page and the change sheet would have asked the user for.
-/// A change that is more than the one package (other queued work, a removal,
-/// a notice) is not taken here: `start` answers false and the change sheet
-/// shows it.
+/// An install, update or removal asked for anywhere in the app, done in a
+/// popup centered over the page: the files download with a bar, then the
+/// transaction runs with a bar of its own, then the button says Done. A
+/// package built for another bootstrap is patched between the download and
+/// installation steps. `PackageQueue` still solves and validates the plan;
+/// a change this popup cannot take is not started, and `start` explains why.
 final class QuickInstallController: UIViewController {
     private enum Phase {
         case downloading, preparing, installing
@@ -29,11 +25,15 @@ final class QuickInstallController: UIViewController {
 
     private var plan: ResolutionPlan
     private let packageName: String
-    private weak var host: UIViewController?
     private var phase = Phase.downloading
     private var work: Task<Void, Never>?
     private var monitor: OperationMonitor?
     private var subscriptions = Set<AnyCancellable>()
+    private let noticesLabel = UILabel().then {
+        $0.font = .caption
+        $0.textColor = .textSubtitle
+        $0.numberOfLines = 0
+    }
 
     private let nameLabel = UILabel().then {
         $0.font = .title
@@ -57,19 +57,28 @@ final class QuickInstallController: UIViewController {
         $0.addAction(UIAction { [weak self] _ in self?.primaryTapped() }, for: .touchUpInside)
     }
 
-    private lazy var queueButton = UIButton(type: .system).then {
+    private lazy var logButton = UIButton(type: .system).then {
         var configuration = UIButton.Configuration.plain()
-        configuration.title = String(localized: "Open Queue")
+        configuration.title = String(localized: "View Full Log")
         $0.configuration = configuration
         $0.isHidden = true
-        $0.addAction(UIAction { [weak self] _ in self?.openQueue() }, for: .touchUpInside)
+        $0.addAction(UIAction { [weak self] _ in self?.showLog() }, for: .touchUpInside)
     }
 
-    private init(plan: ResolutionPlan, packageName: String, host: UIViewController) {
+    private let card = UIView().then {
+        $0.backgroundColor = .groupedBackground
+        $0.layer.cornerRadius = 20
+        $0.layer.cornerCurve = .continuous
+    }
+
+    private init(plan: ResolutionPlan, packageName: String, notices: [String]) {
         self.plan = plan
         self.packageName = packageName
-        self.host = host
         super.init(nibName: nil, bundle: nil)
+        noticesLabel.text = notices.joined(separator: "\n")
+        noticesLabel.isHidden = notices.isEmpty
+        modalPresentationStyle = .overFullScreen
+        modalTransitionStyle = .crossDissolve
     }
 
     @available(*, unavailable)
@@ -79,63 +88,77 @@ final class QuickInstallController: UIViewController {
 
     // MARK: - Entry
 
-    /// Commits the change and presents the sheet. False when the change is
-    /// not this sheet's to take, with the queue as it was.
-    static func start(_ actions: [ResolutionAction], from host: UIViewController) async -> Bool {
+    /// Commits the change and presents the popup. Nil on success; otherwise
+    /// the reason the change is not this popup's to take, with the queue as
+    /// it was.
+    static func start(
+        _ actions: [ResolutionAction],
+        notices: [String] = [],
+        from host: UIViewController
+    ) async -> String? {
         let queue = PackageQueue.shared
+        let generic = String(localized: "Unable to prepare this operation. Try again.")
         guard !Installer.shared.inProcessingQueue, queue.cleanup.isEmpty, queue.blocked == nil,
-              Set(queue.actions.map(\.identity)).isSubset(of: Set(actions.map(\.identity))),
-              case let .success(proposal) = await queue.propose(actions),
-              proposal.notices.isEmpty, proposal.cleanup.isEmpty,
+              Set(queue.actions.map(\.identity)).isSubset(of: Set(actions.map(\.identity)))
+        else { return generic }
+        let proposal: PackageQueue.Proposal
+        switch await queue.propose(actions, notices: notices) {
+        case let .success(solved): proposal = solved
+        case let .failure(failure): return failure.message
+        }
+        guard proposal.cleanup.isEmpty,
               Set(proposal.actions.map(\.identity)) == Set(actions.map(\.identity)),
-              let plan = proposal.plan, plan.remove.isEmpty, !plan.recoveryMode,
-              !plan.install.isEmpty, QueueInstallChecks.hasDpkg(plan),
-              await queue.currency(of: proposal) == .current,
-              queue.commit(proposal),
+              let plan = proposal.plan, !plan.recoveryMode,
+              !plan.install.isEmpty || !plan.remove.isEmpty,
               let first = actions.first,
-              let package = plan.install.first(where: { $0.identity == first.identity }) ?? plan.install.first
-        else { return false }
-        queue.quickInstallActive = true
+              let package = plan.install.first(where: { $0.identity == first.identity })
+              ?? plan.remove.first(where: { $0.identity == first.identity })
+              ?? plan.install.first ?? plan.remove.first
+        else { return generic }
+        guard await queue.currency(of: proposal) == .current, queue.commit(proposal) else {
+            return generic
+        }
         let controller = QuickInstallController(
             plan: plan,
             packageName: PackageCenter.default.name(of: package),
-            host: host
+            notices: proposal.notices
         )
-        host.present(UINavigationController.halfSheet(root: controller), animated: true)
-        return true
+        host.present(controller, animated: true)
+        return nil
     }
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        isModalInPresentation = true
-        navigationController?.isModalInPresentation = true
-        navigationController?.navigationBar.prefersLargeTitles = false
+        view.backgroundColor = .popupScrim
         nameLabel.text = packageName
-        let stack = UIStackView(arrangedSubviews: [nameLabel, statusLabel, progressView, primaryButton, queueButton])
+        let stack = UIStackView(arrangedSubviews: [nameLabel, statusLabel, noticesLabel, progressView, primaryButton, logButton])
         stack.axis = .vertical
         stack.alignment = .fill
         stack.spacing = 16
-        view.addSubview(stack)
-        stack.snp.makeConstraints { x in
-            x.leading.trailing.equalTo(view.safeAreaLayoutGuide).inset(24)
-            x.centerY.equalTo(view.safeAreaLayoutGuide).offset(-20)
+        view.addSubview(card)
+        card.addSubview(stack)
+        card.snp.makeConstraints { x in
+            x.center.equalTo(view.safeAreaLayoutGuide)
+            x.leading.greaterThanOrEqualTo(view.safeAreaLayoutGuide).offset(24)
+            x.trailing.lessThanOrEqualTo(view.safeAreaLayoutGuide).offset(-24)
+            x.width.equalTo(360).priority(750)
         }
+        stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
         primaryButton.snp.makeConstraints { $0.height.equalTo(48) }
-        apply(.downloading)
+        apply(plan.install.contains { $0.localFileURL == nil } ? .downloading : .preparing)
         work = Task { [weak self] in await self?.run() }
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        guard isBeingDismissed || navigationController?.isBeingDismissed == true else { return }
+        guard isBeingDismissed else { return }
         release()
     }
 
     private func release() {
         work?.cancel()
-        PackageQueue.shared.quickInstallActive = false
     }
 
     // MARK: - Steps
@@ -175,11 +198,28 @@ final class QuickInstallController: UIViewController {
         }
         self.plan = plan
         apply(.preparing)
+        var bootstrapInstall = false
+        if !QueueInstallChecks.hasDpkg(plan) {
+            switch await askWithoutDpkg(offersBootstrap: plan.allowsBootstrapInstall) {
+            case .cancel:
+                PackageQueue.shared.clear()
+                return close()
+            case .bootstrapInstall:
+                bootstrapInstall = true
+            case .installAnyway:
+                let names = await QueueInstallChecks.packagesRunningScripts(in: plan)
+                if !names.isEmpty, !(await warnAboutScripts(names)) {
+                    PackageQueue.shared.clear()
+                    return close()
+                }
+            }
+        }
         guard await OperationConfirmation.confirm() else {
+            PackageQueue.shared.clear()
             return close()
         }
         guard !Task.isCancelled else { return }
-        let payload = await Installer.shared.createOperationPayload(plan: plan)
+        let payload = await Installer.shared.createOperationPayload(plan: plan, bootstrapInstall: bootstrapInstall)
         guard !Task.isCancelled else { return }
         guard let payload, !payload.transaction.stages.isEmpty else {
             let report = PackageActionReport.shared.allAvailable()
@@ -197,7 +237,7 @@ final class QuickInstallController: UIViewController {
                 self?.progressView.setProgress(progress.fraction, animated: true)
             }
             .store(in: &subscriptions)
-        // not tied to the task: a dismissed sheet leaves the helper running
+        // not tied to the task: dismissing the popup leaves the helper running
         switch await monitor.finished {
         case .succeeded:
             apply(.finished(monitor.ending))
@@ -223,30 +263,25 @@ final class QuickInstallController: UIViewController {
         phase = next
         var configuration = UIButton.Configuration.filled()
         configuration.cornerStyle = .large
-        queueButton.isHidden = true
-        navigationItem.leftBarButtonItem = nil
+        logButton.isHidden = true
         switch next {
         case .downloading:
-            title = String(localized: "Downloading…")
             statusLabel.text = String(localized: "Downloading…")
             progressView.isHidden = false
             progressView.setProgress(0, animated: false)
             configuration = .tinted()
             configuration.title = String(localized: "Cancel")
         case .preparing:
-            title = String(localized: "Preparing…")
             statusLabel.text = String(localized: "Preparing…")
             progressView.setProgress(0, animated: false)
-            configuration.title = String(localized: "Installing…")
+            configuration.title = busyTitle
             primaryButton.isEnabled = false
         case .installing:
-            title = String(localized: "Installing…")
-            statusLabel.text = String(localized: "Installing…")
+            statusLabel.text = busyTitle
             progressView.isHidden = false
-            configuration.title = String(localized: "Installing…")
+            configuration.title = busyTitle
             primaryButton.isEnabled = false
         case let .finished(ending):
-            title = String(localized: "Completed")
             statusLabel.text = String(localized: "Operation completed.")
             progressView.isHidden = false
             progressView.setProgress(1, animated: true)
@@ -258,23 +293,12 @@ final class QuickInstallController: UIViewController {
             primaryButton.isEnabled = true
             UIAccessibility.post(notification: .announcement, argument: String(localized: "Operation completed."))
         case let .failed(reason):
-            title = String(localized: "Failed")
             statusLabel.text = reason
             progressView.isHidden = true
             configuration.baseBackgroundColor = .operationFailed
             configuration.title = String(localized: "Done")
             primaryButton.isEnabled = true
-            queueButton.isHidden = false
-            if let monitor {
-                navigationItem.leftBarButtonItem = UIBarButtonItem(
-                    title: String(localized: "View Full Log"),
-                    primaryAction: UIAction { [weak self] _ in
-                        self?.navigationController?.pushViewController(
-                            OperationLogController(monitor: monitor), animated: true
-                        )
-                    }
-                )
-            }
+            logButton.isHidden = monitor == nil
         }
         primaryButton.configuration = configuration
     }
@@ -294,21 +318,73 @@ final class QuickInstallController: UIViewController {
             }
         case .finished(.updateApp):
             OwnRegistration.finishUpdate(from: self, registering: monitor?.operation.transaction.installsSelf ?? false)
-        case .finished, .failed:
+        case .finished:
+            close()
+        case .failed:
+            // nothing keeps a queue: the change that failed is dropped
+            PackageQueue.shared.clear()
             close()
         case .preparing, .installing:
             break
         }
     }
 
-    private func openQueue() {
-        let host = host
-        dismiss(animated: true) {
-            host.flatMap(InterfaceHostController.enclosing)?.openQueue()
+    private func showLog() {
+        guard let monitor else { return }
+        present(UINavigationController(rootViewController: OperationLogController(monitor: monitor)), animated: true)
+    }
+
+    private func askWithoutDpkg(offersBootstrap: Bool) async -> QueueInstallChecks.DpkgAnswer {
+        guard presentedViewController == nil, view.window != nil else { return .cancel }
+        var message = String(localized: "dpkg is not installed on this system, so the tools the packages' scripts need may be missing.")
+        if offersBootstrap {
+            message += "\n\n" + String(localized: "Bootstrap Install places every package's files before any script runs.")
+        }
+        return await withCheckedContinuation { continuation in
+            let alert = AlertViewController(
+                title: String.LocalizationValue(String(localized: "dpkg Is Not Installed")),
+                message: String.LocalizationValue(message)
+            ) { context in
+                if offersBootstrap {
+                    context.addAction(title: "Bootstrap Install", attribute: .accent) {
+                        context.dispose { continuation.resume(returning: .bootstrapInstall) }
+                    }
+                }
+                context.addAction(title: "Install Anyway") {
+                    context.dispose { continuation.resume(returning: .installAnyway) }
+                }
+                context.addAction(title: "Cancel") {
+                    context.dispose { continuation.resume(returning: .cancel) }
+                }
+            }
+            present(alert, animated: true)
+        }
+    }
+
+    private func warnAboutScripts(_ names: [String]) async -> Bool {
+        guard presentedViewController == nil, view.window != nil else { return false }
+        let list = ListFormatter.localizedString(byJoining: names)
+        let message = String.LocalizationValue(
+            String(localized: "These packages run scripts that this system may not be able to run: \(list). The installation is likely to fail.")
+        )
+        return await withCheckedContinuation { continuation in
+            let alert = AlertViewController(title: "Installation Likely to Fail", message: message) { context in
+                context.addAction(title: "Cancel") {
+                    context.dispose { continuation.resume(returning: false) }
+                }
+                context.addAction(title: "Install Anyway", attribute: .accent) {
+                    context.dispose { continuation.resume(returning: true) }
+                }
+            }
+            present(alert, animated: true)
         }
     }
 
     private func close() {
-        (navigationController ?? self).dismiss(animated: true)
+        dismiss(animated: true)
+    }
+
+    private var busyTitle: String {
+        plan.install.isEmpty ? String(localized: "Removing…") : String(localized: "Installing…")
     }
 }

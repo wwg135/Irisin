@@ -87,7 +87,7 @@ final class DownloadArchiveController: UIViewController {
         let url = target.obtainDownloadLink()
         downloads.downloadArchive(target)
         defer { downloads.release(target) }
-        // ponytail: polls four times a second like the queue page; a
+        // ponytail: polls four times a second like the operation popup; a
         // publisher on the statuses if the tick ever shows
         while downloads.isDownloading(url) {
             show(downloads.status(for: url))

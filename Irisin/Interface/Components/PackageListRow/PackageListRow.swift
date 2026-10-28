@@ -171,12 +171,6 @@ class PackageListRow: UIView {
             }
             .sink { [weak self] _ in self?.updateIndicator() }
             .store(in: &subscriptions)
-        // and the queue taking a package or letting it go redraws the rest
-        NotificationCenter.default.publisher(for: .PackageQueueChanged)
-            .receive(on: DispatchQueue.main)
-            .filter { [weak self] _ in self?.represent != nil }
-            .sink { [weak self] _ in self?.updateIndicator() }
-            .store(in: &subscriptions)
     }
 
     @available(*, unavailable)
@@ -300,25 +294,6 @@ class PackageListRow: UIView {
             indicator.tintColor = overrideIcon.color
             indicator.image = overrideIcon.image
         }
-        Self.drawQueueBadge(on: indicator, for: represent)
-    }
-
-    /// What the queue is about to do to the package, over every other mark
-    /// in the corner: an arrow into the queue for an install, a cross for a
-    /// removal. Nothing when the queue leaves it.
-    static func drawQueueBadge(on indicator: UIImageView, for package: Package) {
-        guard let plan = PackageQueue.shared.plan else { return }
-        // a reinstall or an update is in both lists, and it is an install
-        if plan.install.contains(where: { $0.identity == package.identity }) {
-            indicator.tintColor = .queuedInstall
-            indicator.image = .fluent(.arrowRightCircle24Filled)
-        } else if plan.remove.contains(where: { $0.identity == package.identity }) {
-            indicator.tintColor = .queuedRemoval
-            indicator.image = UIImage(systemName: "xmark.circle.fill")
-        } else {
-            return
-        }
-        indicator.backgroundColor = .versionBadgeBacking
     }
 
     /// The corner of a package's icon: what the package is against the

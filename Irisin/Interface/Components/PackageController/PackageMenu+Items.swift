@@ -11,28 +11,6 @@ import UIKit
 extension PackageMenu {
     static let allMenuActions: [Item] = [
         .init(
-            descriptor: .dequeue,
-            block: { package, host, _ in
-                await QueueChangeController.show(.withdraw(package.identity), from: host)
-            },
-            eligibleForPerform: { package in
-                PackageQueue.shared.isQueued(package.identity)
-            }
-        ),
-        .init(
-            descriptor: .replace,
-            block: resolveInstallRequest,
-            eligibleForPerform: { package in
-                guard let queued = PackageQueue.shared.queuedPackage(of: package.identity),
-                      package.localFileURL != nil
-                      || (package.isSupportedOnDevice && package.obtainDownloadLink() != PackageBadUrl),
-                      let version = package.latestVersion,
-                      let requested = PackageCenter.default.trim(package: package, toVersion: version)
-                else { return false }
-                return queued != requested
-            }
-        ),
-        .init(
             descriptor: .directInstall,
             block: resolveInstallRequest,
             eligibleForPerform: { package in
@@ -109,7 +87,7 @@ extension PackageMenu {
         .init(
             descriptor: .remove,
             block: { package, host, _ in
-                await enqueue([.remove(package.identity)], from: host)
+                await install([.remove(package.identity)], from: host)
             },
             eligibleForPerform: { package in
                 PackageCenter
