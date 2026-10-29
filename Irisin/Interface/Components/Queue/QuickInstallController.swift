@@ -47,7 +47,7 @@ private final class ProgressIndicator: UIView {
     }
 
     var progressTintColor: UIColor {
-        get { bar.progressTintColor }
+        get { bar.progressTintColor ?? .tintColor }
         set { bar.progressTintColor = newValue }
     }
 
