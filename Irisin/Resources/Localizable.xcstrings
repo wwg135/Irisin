@@ -25185,120 +25185,120 @@
         }
       }
     },
-    "Fila opens folders and files on this device. It comes from the OwnGoal Studio repository." : {
+    "Neither Fila nor Filza is installed. Fila opens folders and files on this device and comes from the OwnGoal Studio repository." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يفتح Fila المجلدات والملفات على هذا الجهاز، ويتوفر من مستودع OwnGoal Studio."
+            "value" : "لم يتم تثبيت Fila ولا Filza. يفتح Fila المجلدات والملفات على هذا الجهاز، ويتوفر من مستودع OwnGoal Studio."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila এই ডিভাইসের ফোল্ডার ও ফাইল খোলে। এটি OwnGoal Studio রিপোজিটরি থেকে পাওয়া যায়।"
+            "value" : "Fila বা Filza কোনোটিই ইনস্টল করা নেই। Fila এই ডিভাইসের ফোল্ডার ও ফাইল খোলে এবং OwnGoal Studio রিপোজিটরি থেকে পাওয়া যায়।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila öffnet Ordner und Dateien auf diesem Gerät. Die App stammt aus der Quelle von OwnGoal Studio."
+            "value" : "Weder Fila noch Filza ist installiert. Fila öffnet Ordner und Dateien auf diesem Gerät und stammt aus der Quelle von OwnGoal Studio."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila opens folders and files on this device. It comes from the OwnGoal Studio repository."
+            "value" : "Neither Fila nor Filza is installed. Fila opens folders and files on this device and comes from the OwnGoal Studio repository."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila abre carpetas y archivos de este dispositivo. Está disponible en el repositorio de OwnGoal Studio."
+            "value" : "No hay instalado ni Fila ni Filza. Fila abre carpetas y archivos de este dispositivo y está disponible en el repositorio de OwnGoal Studio."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila ouvre les dossiers et fichiers de cet appareil. Cette app est proposée par le dépôt OwnGoal Studio."
+            "value" : "Ni Fila ni Filza n’est installé. Fila ouvre les dossiers et fichiers de cet appareil et est proposé par le dépôt OwnGoal Studio."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila इस डिवाइस पर फ़ोल्डर और फ़ाइलें खोलता है। यह OwnGoal Studio रिपॉज़िटरी से मिलता है।"
+            "value" : "न Fila इंस्टॉल है और न Filza। Fila इस डिवाइस पर फ़ोल्डर और फ़ाइलें खोलता है और OwnGoal Studio रिपॉज़िटरी से मिलता है।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila membuka folder dan file di perangkat ini. Fila tersedia dari repositori OwnGoal Studio."
+            "value" : "Fila maupun Filza belum diinstal. Fila membuka folder dan file di perangkat ini dan tersedia dari repositori OwnGoal Studio."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila apre cartelle e file su questo dispositivo. È disponibile nel repository di OwnGoal Studio."
+            "value" : "Né Fila né Filza sono installati. Fila apre cartelle e file su questo dispositivo ed è disponibile nel repository di OwnGoal Studio."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Filaはこのデバイス上のフォルダやファイルを開くAppです。OwnGoal Studioのリポジトリから入手できます。"
+            "value" : "FilaもFilzaもインストールされていません。Filaはこのデバイス上のフォルダやファイルを開くAppで、OwnGoal Studioのリポジトリから入手できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila는 이 기기의 폴더와 파일을 엽니다. OwnGoal Studio 소스에서 제공됩니다."
+            "value" : "Fila와 Filza 모두 설치되어 있지 않습니다. Fila는 이 기기의 폴더와 파일을 열며 OwnGoal Studio 소스에서 제공됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O Fila abre pastas e arquivos neste dispositivo. Ele vem do repositório OwnGoal Studio."
+            "value" : "Nem o Fila nem o Filza está instalado. O Fila abre pastas e arquivos neste dispositivo e vem do repositório OwnGoal Studio."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila открывает папки и файлы на этом устройстве. Приложение доступно в репозитории OwnGoal Studio."
+            "value" : "Ни Fila, ни Filza не установлены. Fila открывает папки и файлы на этом устройстве и доступно в репозитории OwnGoal Studio."
           }
         },
         "sw" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila hufungua folda na faili kwenye kifaa hiki. Inapatikana kutoka hazina ya OwnGoal Studio."
+            "value" : "Fila wala Filza haijasakinishwa. Fila hufungua folda na faili kwenye kifaa hiki na inapatikana kutoka hazina ya OwnGoal Studio."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila, bu aygıttaki klasörleri ve dosyaları açar. OwnGoal Studio deposundan edinilir."
+            "value" : "Ne Fila ne de Filza yüklü. Fila, bu aygıttaki klasörleri ve dosyaları açar ve OwnGoal Studio deposundan edinilir."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila mở thư mục và tệp trên thiết bị này. Ứng dụng có trong nguồn OwnGoal Studio."
+            "value" : "Chưa cài Fila hay Filza. Fila mở thư mục và tệp trên thiết bị này và có trong nguồn OwnGoal Studio."
           }
         },
         "yo" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila ń ṣí àwọn fódà àti àwọn fáìlì lórí ẹ̀rọ yìí. Ó wá láti ibi ìpamọ́ OwnGoal Studio."
+            "value" : "Kò sí Fila tàbí Filza tí a fi sórí ẹ̀rọ. Fila ń ṣí àwọn fódà àti àwọn fáìlì lórí ẹ̀rọ yìí, ó sì wá láti ibi ìpamọ́ OwnGoal Studio."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila 用于打开设备上的文件夹和文件，可从 OwnGoal Studio 软件源安装。"
+            "value" : "未安装 Fila 或 Filza。Fila 用于打开设备上的文件夹和文件，可从 OwnGoal Studio 软件源安装。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fila 可打開此裝置上的檔案夾和檔案，可從 OwnGoal Studio 軟體源取得。"
+            "value" : "未安裝 Fila 或 Filza。Fila 可打開此裝置上的檔案夾和檔案，可從 OwnGoal Studio 軟體源取得。"
           }
         }
       }
@@ -28250,6 +28250,124 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用復原模式安裝？"
+          }
+        }
+      }
+    },
+    "Install Fila or Filza" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت Fila أو Filza"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fila বা Filza ইনস্টল করুন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fila oder Filza installieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install Fila or Filza"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instalar Fila o Filza"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installer Fila ou Filza"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fila या Filza इंस्टॉल करें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instal Fila atau Filza"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installa Fila o Filza"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FilaまたはFilzaをインストール"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fila 또는 Filza 설치"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instalar o Fila ou o Filza"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Установить Fila или Filza"
+          }
+        },
+        "sw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sakinisha Fila au Filza"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fila veya Filza'yı Yükle"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt Fila hoặc Filza"
+          }
+        },
+        "yo" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fi Fila tàbí Filza Sórí Ẹ̀rọ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安装 Fila 或 Filza"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安裝 Fila 或 Filza"
           }
         }
       }
