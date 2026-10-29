@@ -171,23 +171,38 @@ final class QuickInstallController: UIViewController {
         guard !Installer.shared.inProcessingQueue, queue.cleanup.isEmpty, queue.blocked == nil,
               Set(queue.actions.map(\.identity)).isSubset(of: Set(actions.map(\.identity)))
         else { return generic }
-        let proposal: PackageQueue.Proposal
-        switch await queue.propose(actions, notices: notices) {
-        case let .success(solved): proposal = solved
-        case let .failure(failure): return failure.message
+        // The queue's revision moves with every package notification (a
+        // refresh, dpkg's status read back), and proposing and checking
+        // currency each wait off the main actor, so a proposal can be stale
+        // by the time it is taken. That is a reason to propose again, not
+        // to refuse the tap.
+        var taken: (proposal: PackageQueue.Proposal, plan: ResolutionPlan, package: Package)?
+        for attempt in 0 ..< 3 {
+            if attempt > 0 {
+                guard !Installer.shared.inProcessingQueue else { return generic }
+                try? await Task.sleep(continuousSeconds: 0.3)
+            }
+            let proposal: PackageQueue.Proposal
+            switch await queue.propose(actions, notices: notices) {
+            case let .success(solved): proposal = solved
+            case let .failure(failure): return failure.message
+            }
+            guard proposal.cleanup.isEmpty,
+                  Set(proposal.actions.map(\.identity)) == Set(actions.map(\.identity)),
+                  let plan = proposal.plan, !plan.recoveryMode,
+                  !plan.install.isEmpty || !plan.remove.isEmpty,
+                  let first = actions.first,
+                  let package = plan.install.first(where: { $0.identity == first.identity })
+                  ?? plan.remove.first(where: { $0.identity == first.identity })
+                  ?? plan.install.first ?? plan.remove.first
+            else { return generic }
+            guard await queue.currency(of: proposal) == .current, queue.commit(proposal) else {
+                continue
+            }
+            taken = (proposal, plan, package)
+            break
         }
-        guard proposal.cleanup.isEmpty,
-              Set(proposal.actions.map(\.identity)) == Set(actions.map(\.identity)),
-              let plan = proposal.plan, !plan.recoveryMode,
-              !plan.install.isEmpty || !plan.remove.isEmpty,
-              let first = actions.first,
-              let package = plan.install.first(where: { $0.identity == first.identity })
-              ?? plan.remove.first(where: { $0.identity == first.identity })
-              ?? plan.install.first ?? plan.remove.first
-        else { return generic }
-        guard await queue.currency(of: proposal) == .current, queue.commit(proposal) else {
-            return generic
-        }
+        guard let (proposal, plan, package) = taken else { return generic }
         let controller = QuickInstallController(
             plan: plan,
             packageName: PackageCenter.default.name(of: package),
