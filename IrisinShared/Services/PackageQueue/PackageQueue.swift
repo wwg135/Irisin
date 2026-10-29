@@ -55,6 +55,10 @@ final class PackageQueue {
     /// Notices to show with the operation: held-back updates, diagnostics.
     private(set) var notices: [String] = []
     private(set) var revision = 0
+    /// Moves only when the queue's own requests, plan or operation state
+    /// change, never for a package notification: a proposal is stale for
+    /// the first and `currency(of:)` judges the second.
+    private(set) var contentRevision = 0
     /// The packages Patch has adapted, each with the tree staging hands the
     /// helper and the control paragraph every solve from then on reads in
     /// place of the adapter's preview; pruned as a package leaves the plan.
@@ -143,7 +147,7 @@ final class PackageQueue {
     /// packages moved since it was made; the sheet proposes again.
     @discardableResult
     func commit(_ proposal: Proposal) -> Bool {
-        guard proposal.revision == revision, !Installer.shared.inProcessingQueue else { return false }
+        guard proposal.revision == contentRevision, !Installer.shared.inProcessingQueue else { return false }
         actions = proposal.actions
         cleanup = proposal.cleanup
         plan = proposal.plan
@@ -405,7 +409,7 @@ final class PackageQueue {
             heldChange?.cancel()
             heldChange = nil
         }
-        changed()
+        changed(content: false)
         guard plan != nil else { return }
         refreshTask?.cancel()
         refreshTask = Task { await refresh() }
@@ -474,7 +478,7 @@ final class PackageQueue {
         cleanup: Set<String>,
         notices: [String]
     ) async -> Result<Proposal, ResolutionFailure> {
-        let revision = revision
+        let revision = contentRevision
         guard !actions.isEmpty else {
             return .success(Proposal(actions: [], cleanup: [], plan: nil, notices: [], revision: revision))
         }
@@ -696,8 +700,9 @@ final class PackageQueue {
         return notices
     }
 
-    private func changed() {
+    private func changed(content: Bool = true) {
         revision += 1
+        if content { contentRevision += 1 }
         NotificationCenter.default.post(name: .PackageQueueChanged, object: nil)
     }
 
