@@ -57,6 +57,10 @@ let package = Package(
         // `ProcessSpawn`.
         .systemLibrary(name: "CIrisinSpawn", path: "Sources/CIrisinSpawn"),
 
+        // db(3) from `<db.h>`, which the Darwin module leaves out: the hash
+        // files a bootstrap keeps its users in. See `BootstrapAccounts`.
+        .systemLibrary(name: "CIrisinDB", path: "Sources/CIrisinDB"),
+
         // The wire vocabulary and the job description, compiled into every
         // side, and how the daemon and the helper find their install root
         // and start a process. Free of anything platform-specific beyond XPC
@@ -79,6 +83,7 @@ let package = Package(
         .target(
             name: "IrisinInstaller",
             dependencies: [
+                "CIrisinDB",
                 "IrisinProtocol",
                 "IrisinPreparation",
                 .product(name: "IcliKit", package: "icli", condition: .when(platforms: [.iOS, .tvOS])),
@@ -114,7 +119,7 @@ let package = Package(
 
         .testTarget(name: "IrisinProtocolTests", dependencies: ["IrisinProtocol"]),
         .testTarget(name: "IrisinVendorTests", dependencies: ["IrisinVendor"]),
-        .testTarget(name: "IrisinInstallerTests", dependencies: ["IrisinInstaller"]),
+        .testTarget(name: "IrisinInstallerTests", dependencies: ["CIrisinDB", "IrisinInstaller"]),
         .testTarget(name: "IrisinClientTests", dependencies: ["IrisinClient"]),
         .testTarget(
             name: "IrisinExternalContractTests",
