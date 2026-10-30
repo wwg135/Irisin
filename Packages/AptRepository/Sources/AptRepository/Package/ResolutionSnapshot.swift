@@ -28,9 +28,13 @@ public struct ResolutionSnapshot: Sendable {
     /// version installs either way.
     public let offersAdaptedUpdates: Bool
     /// The repository each installed identity came from, for those this
-    /// app installed. An identity follows its repository: only that
-    /// repository's versions are candidates for it. An identity with no
-    /// origin has none to keep to and takes the newest from any.
+    /// app installed, while that repository still lists it. An identity
+    /// follows its repository: only that repository's versions are
+    /// candidates for it. An identity with no origin has none to keep to
+    /// and takes the newest from any, and so does one whose repository was
+    /// removed or no longer lists it: an origin no repository answers for
+    /// would keep the package where it is for good, and every update that
+    /// needs a newer one with it.
     public let origins: [String: URL]
     /// Installed identities APT marks `Auto-Installed`: they came in as a
     /// dependency, and may go once nothing that was asked for needs them.
@@ -64,7 +68,10 @@ public struct ResolutionSnapshot: Sendable {
         self.adaptedManifestPreview = adaptedManifestPreview
         self.blockedUpdates = blockedUpdates
         self.offersAdaptedUpdates = offersAdaptedUpdates
-        self.origins = origins
+        let listed = Set(packages.lazy.filter { package in
+            origins[package.identity].map { $0 == package.repoRef } == true
+        }.map(\.identity))
+        self.origins = origins.filter { listed.contains($0.key) }
         self.autoInstalled = autoInstalled
         self.statusDigest = statusDigest
         self.catalogueRevision = catalogueRevision
