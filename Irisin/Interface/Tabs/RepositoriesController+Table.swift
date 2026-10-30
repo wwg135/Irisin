@@ -2,9 +2,12 @@
 //  RepositoriesController+Table.swift
 //  Irisin
 //
+//  Created by Lakr Aream on 2021/8/17.
+//
 
 import AptRepository
 import UIKit
+import SPIndicator
 
 extension RepositoriesController: UITableViewDelegate {
     func url(at indexPath: IndexPath) -> URL? {
@@ -74,46 +77,73 @@ extension RepositoriesController: UITableViewDelegate {
         leadingSwipeActionsConfigurationForRowAt index: IndexPath
     ) -> UISwipeActionsConfiguration? {
         guard let url = url(at: index) else { return nil }
-        let copyItem = UIContextualAction(
+        // Pin / Unpin action on right-swipe (leading)
+        let isPinned = RepositoriesController.isPinned(url)
+        let pinTitle = isPinned ? String(localized: "Unpin") : String(localized: "Pin")
+        let pinItem = UIContextualAction(
+            style: .normal,
+            title: pinTitle
+        ) { [weak self] _, _, completion in
+            RepositoriesController.togglePinned(url)
+            self?.reloadDataSource()
+            SPIndicator.present(title: isPinned ? String(localized: "Unpinned") : String(localized: "Pinned"), preset: .done)
+            completion(true)
+        }
+        // Use design token for swipe action background
+        pinItem.backgroundColor = UIColor.buttonNormal
+
+        let shareItem = UIContextualAction(
             style: .normal,
             title: String(localized: "Share")
         ) { [weak self] _, _, completion in
             completion(true)
             self?.share(url, from: tableView.cellForRow(at: index))
         }
-        copyItem.backgroundColor = .swipeShare
-        return UISwipeActionsConfiguration(actions: [copyItem])
+        shareItem.backgroundColor = .swipeShare
+        return UISwipeActionsConfiguration(actions: [pinItem, shareItem])
     }
 
-    func tableView(
-        _ tableView: UITableView,
-        contextMenuConfigurationForRowAt indexPath: IndexPath,
-        point _: CGPoint
-    ) -> UIContextMenuConfiguration? {
-        guard !tableView.isEditing, let url = url(at: indexPath) else { return nil }
-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
-            UIMenu(children: [
-                UIMenu(options: .displayInline, children: [
-                    UIAction(
-                        title: String(localized: "Refresh"),
-                        image: UIImage(systemName: "arrow.clockwise")
-                    ) { _ in self?.refreshRepository(url) },
-                    UIAction(
-                        title: String(localized: "Share"),
-                        image: UIImage(systemName: "square.and.arrow.up")
-                    ) { _ in self?.share(url, from: tableView.cellForRow(at: indexPath)) },
-                    ExportFile.exportRepositoryAction(
-                        url,
-                        host: { self },
-                        anchor: { tableView.cellForRow(at: indexPath).map { PopoverAnchor($0) } }
-                    ),
-                ]),
-                UIAction(
-                    title: String(localized: "Delete"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: .destructive
-                ) { _ in self?.delete([url]) },
-            ])
+    // MARK: - Header views for clearer card groups
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let snapshot = diffableDataSource.snapshot()
+        let count = snapshot.numberOfItems(inSection: section)
+        // For section 0, also ensure the persistent pinned list is non-empty
+        if section == 0 {
+            guard !Self.pinnedRepositoryUrls().isEmpty && count > 0 else { return nil }
+        } else {
+            guard count > 0 else { return nil }
         }
+
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        // Plain header without background card - label only
+        let label = UILabel()
+        // Use design token for font instead of literal systemFont
+        label.font = UIFont.rounded(.footnote, emphasized: true)
+        // Use design token for color
+        label.textColor = .textSubtitle
+        // Use localized "Pin" for section 0 per request
+        label.text = section == 0 ? String(localized: "Pin") : String(localized: "Repositories")
+
+        header.addSubview(label)
+
+        label.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(16)
+            make.top.equalToSuperview().offset(6)
+            make.bottom.equalToSuperview().offset(-6)
+        }
+
+        return header
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        let snapshot = diffableDataSource.snapshot()
+        let count = snapshot.numberOfItems(inSection: section)
+        if section == 0 {
+            return (!Self.pinnedRepositoryUrls().isEmpty && count > 0) ? 36 : 0.1
+        }
+        return count > 0 ? 36 : 0.1
     }
 }

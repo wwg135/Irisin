@@ -4,7 +4,7 @@ import Foundation
 extension Downloads {
     /// Waits until every one of these packages is on disk, or answers the
     /// first download's failure. Stops when `plan` is no longer the queue's.
-    /// The queue page and a browser's confirmed plan both wait here.
+    /// The operation popup and a browser's confirmed plan both wait here.
     func awaitFiles(
         of packages: [Package],
         in plan: UUID,

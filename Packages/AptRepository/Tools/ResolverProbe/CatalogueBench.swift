@@ -1,6 +1,7 @@
 @_spi(Probe) import AptRepository
 import AptResolver
 import Foundation
+import IrisinAdapter
 import IrisinProtocol
 
 /// The resolver against real repositories, read from disk. A fixture
@@ -21,6 +22,7 @@ import IrisinProtocol
 @MainActor
 enum CatalogueBench {
     nonisolated static let device = BootstrapArchitecture.roothide.rawValue
+    nonisolated static let installable = PackageAdapters.installed.installable(on: device)
 
     static func run(_ arguments: [String]) async throws {
         guard arguments.count >= 2 else { throw ResolutionFailure(message: "no fixture directory") }
@@ -35,7 +37,11 @@ enum CatalogueBench {
             dpkgStatusLocation: work.appendingPathComponent("status").path,
             aptExtendedStatesLocation: work.appendingPathComponent("extended_states").path,
             deviceArchitecture: { device },
+            installableArchitectures: { installable },
             indexFallbacks: { BootstrapArchitecture.probeOrder.map(\.rawValue) },
+            adaptedManifestPreview: {
+                PackageAdapters.installed.resolveAdaptedPackageManifestPreview(control: $0, on: device)
+            },
             storage: MemoryStorage(),
             logger: QuietLogger()
         ))
@@ -82,7 +88,7 @@ enum CatalogueBench {
         print("catalogue: \(manifest.count) repositories, \(identities) identities, \(snapshot.packages.count) rows")
 
         // the bootstrap
-        let seeded = seeds.compactMap { candidate($0, in: snapshot) }
+        let seeded = seeds.compactMap { candidate($0, in: snapshot, native: true) }
         let base = try PackageResolver.resolve(request: .init(actions: seeded.map { .install($0) }), snapshot: snapshot)
         var installed = base.finalPackages.filter { $0.identity != "firmware" }
         var sources = base.install
@@ -106,7 +112,7 @@ enum CatalogueBench {
             guard let package = byIdentity[identity]!.min(by: {
                 ($0.repoRef?.absoluteString ?? "") < ($1.repoRef?.absoluteString ?? "")
             }),
-                let versions = package.versions(builtFor: device)
+                let versions = package.versions(supportingAnyOf: [device])
             else { continue }
             let ordered = versions.payload.keys.sorted { DebianVersion.compare($0, $1) > 0 }
             let wantsOlder: Bool
@@ -162,15 +168,16 @@ enum CatalogueBench {
     }
 
     /// The version the package page would install: the best fit for this
-    /// bootstrap (its own build, then `all`),
+    /// bootstrap (its own build, then `all`, then one an adapter rewrites),
     /// the newest of those, from the first repository by address.
-    static func candidate(_ identity: String, in snapshot: ResolutionSnapshot) -> Package? {
+    static func candidate(_ identity: String, in snapshot: ResolutionSnapshot, native: Bool = false) -> Package? {
         var best: (fit: Int, version: String, repo: String, package: Package)?
         for package in snapshot.packages where package.identity == identity {
             for (version, metadata) in package.payload {
                 let architectures = Package.architectures(in: metadata)
-                let fit = architectures.contains(device) ? 2 : architectures.contains("all") ? 1 : 0
-                guard fit > 0 else { continue }
+                let fit = architectures.contains(device) ? 3 : architectures.contains("all") ? 2
+                    : architectures.contains(where: installable.contains) ? 1 : 0
+                guard fit > (native ? 1 : 0) else { continue }
                 let repo = package.repoRef?.absoluteString ?? ""
                 if let current = best {
                     let order = DebianVersion.compare(version, current.version)
@@ -229,7 +236,7 @@ enum CatalogueBench {
     static func goldenRequests(_ snapshot: ResolutionSnapshot) -> [Scenario] {
         var result = scenarios(snapshot).map { Scenario(name: $0.name, request: $0.request) }
         let installed = Set(snapshot.installed.map(\.identity))
-        let identities = Set(snapshot.packages.filter { $0.versions(builtFor: device) != nil }.map(\.identity))
+        let identities = Set(snapshot.packages.filter { $0.versions(supportingAnyOf: installable) != nil }.map(\.identity))
             .subtracting(installed).sorted()
         var state: UInt64 = 20_260_924
         var picked: [String] = []
@@ -278,7 +285,7 @@ enum CatalogueBench {
         for package in snapshot.packages.sorted(by: { ($0.identity, $0.repoRef?.absoluteString ?? "") < ($1.identity, $1.repoRef?.absoluteString ?? "") }) {
             for version in package.payload.keys.sorted() {
                 let metadata = package.payload[version]!
-                guard Package.architectures(in: metadata).contains(where: { $0 == "all" || $0 == device }) else { continue }
+                guard Package.architectures(in: metadata).contains(where: { $0 == "all" || installable.contains($0) }) else { continue }
                 let broken = kinds.contains { kind in
                     guard let value = metadata[kind], !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
                     return PackageRequirementGroup(value: value, type: .init(rawValue: kind)!) == nil
@@ -294,7 +301,7 @@ enum CatalogueBench {
             if let user = snapshot.packages.sorted(by: { $0.identity < $1.identity }).first(where: { offered in
                 offered.identity != package.identity
                     && (offered.latestMetadata?["depends"] ?? "").contains(package.identity)
-                    && offered.supports(architecture: device)
+                    && offered.supports(anyOf: installable)
             }), let chosen = candidate(user.identity, in: snapshot) {
                 result.append(Scenario(name: "install \(user.identity), which depends on an unreadable entry", request: .init(actions: [.install(chosen)])))
             }
@@ -303,7 +310,7 @@ enum CatalogueBench {
         // until asked for by name
         for (identity, origin) in snapshot.origins.sorted(by: { $0.key < $1.key }) {
             guard let other = snapshot.packages.first(where: {
-                $0.identity == identity && $0.repoRef != origin && $0.supports(architecture: device)
+                $0.identity == identity && $0.repoRef != origin && $0.supports(anyOf: installable)
             }), let version = other.latestVersion else { continue }
             let single = Package(identity: identity, payload: [version: other.payload[version]!], repoRef: other.repoRef)
             result.append(Scenario(name: "install \(identity) from another repository", request: .init(actions: [.install(single)])))

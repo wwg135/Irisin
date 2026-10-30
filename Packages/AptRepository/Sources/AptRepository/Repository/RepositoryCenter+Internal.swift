@@ -41,8 +41,9 @@ extension RepositoryCenter {
         let suiteUrl: URL
         let distribution: String?
         let components: [String]
-        /// the bootstrap's index directories
+        /// the bootstrap's index directories and what installs on it
         var architectures = AptEnvironment.current.indexArchitectures
+        var installable = AptEnvironment.current.installableArchitectures
         /// How long the icon, the payment endpoint and the featured banners
         /// may take in all, and how much longer than the Release and the
         /// index they are waited for. What they bring is optional; the
@@ -57,7 +58,8 @@ extension RepositoryCenter {
                 distribution: distribution,
                 components: components,
                 release: release,
-                architectures: architectures
+                architectures: architectures,
+                installable: installable
             )
         }
     }
@@ -78,10 +80,8 @@ extension RepositoryCenter {
         /// this round leaves the host alone
         var hostUnreachable = false
 
-        /// an index was read; one with nothing for this bootstrap is an
-        /// empty catalogue, and replaces what the repository had
         var succeeded: Bool {
-            packages != nil
+            (packages?.count ?? 0) > 0
         }
     }
 
@@ -337,10 +337,9 @@ extension RepositoryCenter {
         return try work()
     }
 
-    /// An entry's indexes read and compiled into packages, nil when they
-    /// name no package at all (a captive portal's page under HTTP 200 is no
-    /// catalogue), with the refresh queue told it is still moving. An index
-    /// whose packages are all for another bootstrap is an empty catalogue.
+    /// An entry's indexes read and compiled into packages, nil when that
+    /// comes to nothing (a captive portal's page under HTTP 200 is no
+    /// catalogue), with the refresh queue told it is still moving.
     nonisolated static func compilePackageIndexes(
         _ indexes: [FetchedIndex],
         of bases: [URL],
@@ -351,8 +350,8 @@ extension RepositoryCenter {
     ) -> [String: Package]? {
         beating(networking.activity) {
             guard let body = readPackageIndexes(indexes, of: bases, suffix: suffix, digests: digests) else { return nil }
-            let read = readPackageIndex(body, fromRepo: fromRepo)
-            return read.entries == 0 ? nil : read.packages
+            let packages = invokePackages(withContext: body, fromRepo: fromRepo)
+            return packages.isEmpty ? nil : packages
         }
     }
 
@@ -667,12 +666,12 @@ extension RepositoryCenter {
         // One entry at a time, in order: what installs here first, then the
         // other bootstraps' indexes one by one. Within one, knock on
         // every compression suffix and keep the first that compiles to a
-        // catalogue, empty or not; cancelling the group stops the rest. Only worth
+        // non-empty index; cancelling the group stops the rest. Only worth
         // it when the server answered and the file name or its compression
         // was wrong.
         aptLog(Self.self, "update \(id) enter stage 3", level: .verbose)
 
-        if outcome.packages == nil {
+        if outcome.packages?.count ?? 0 < 1 {
             if noAnswer, !Task.isCancelled {
                 let index = preferredDownloads.values.first?.summary ?? "none"
                 aptLog(
