@@ -21,7 +21,7 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: macos-latest
+    runs-on: xcode-27
     timeout-minutes: 90
 
     steps:
@@ -71,11 +71,11 @@ jobs:
           print('Root.strings patched' if patch(s) != s else 'Root.strings up-to-date')
           PY
 
-      - name: Select newest Xcode
+      - name: Select Xcode 27.1
         run: |
-          latest="$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V | tail -n1)"
-          sudo xcode-select -s "$latest/Contents/Developer"
+          sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
           xcodebuild -version
+          echo "iPhoneOS SDK $(xcrun --sdk iphoneos --show-sdk-version)"
 
       - name: Install dependencies
         shell: bash
