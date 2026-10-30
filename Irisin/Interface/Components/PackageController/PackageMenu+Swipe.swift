@@ -7,16 +7,13 @@ import AptRepository
 import UIKit
 
 /// A swipe on any package row: the package menu's own actions, decided by
-/// the same eligibility and run by the same blocks, with one difference.
-/// A request that changes the queue by the swiped package alone joins it
-/// without the change sheet (`QueueChangeController.takesPlainChanges`);
-/// one that brings anything else along still shows the sheet.
+/// the same eligibility and run by the same blocks.
 extension PackageMenu {
     /// What a swipe on a repository's row offers, from the trailing edge
     /// in: what the user came to the list for comes first, Install or
     /// Update, and Remove last. The Installed page has its own order
     /// (`swipeDescriptors`), Remove first.
-    static let catalogueSwipeDescriptors: [Action] = [.dequeue, .install, .update, .reinstall, .remove]
+    static let catalogueSwipeDescriptors: [Action] = [.install, .update, .reinstall, .remove]
 
     /// The swipe actions of a repository's row, in `catalogueSwipeDescriptors`'s order.
     static func swipeActions(forCatalogue package: Package) -> [Item] {
@@ -45,16 +42,12 @@ extension PackageMenu {
     ) -> UISwipeActionsConfiguration? {
         guard !actions.isEmpty else { return nil }
         let configuration = UISwipeActionsConfiguration(actions: actions.map { action in
-            let removes = action.descriptor == .remove || action.descriptor == .dequeue
+            let removes = action.descriptor == .remove
             let item = UIContextualAction(style: .normal, title: nil) { [weak host] _, _, completion in
                 completion(true)
                 guard let host else { return }
                 let anchor = anchor()
-                Task {
-                    await QueueChangeController.$takesPlainChanges.withValue(true) {
-                        await action.block(package, host, anchor)
-                    }
-                }
+                Task { await action.block(package, host, anchor) }
             }
             // the menu's own symbol without its outline, which the system
             // draws as a circle of its own, and its name for VoiceOver
@@ -74,8 +67,6 @@ extension PackageMenu.Action {
     /// it, since the action's own fill is the shape.
     func swipeIcon() -> UIImage? {
         switch self {
-        case .dequeue:
-            UIImage(systemName: "minus")
         case .install:
             UIImage(systemName: "arrow.down")
         case .reinstall:

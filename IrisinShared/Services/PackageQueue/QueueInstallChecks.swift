@@ -8,8 +8,8 @@ import AptResolver
 import Foundation
 import IrisinProtocol
 
-/// The last checks before the queue runs, for a system with no dpkg: a
-/// device set up without a bootstrap, as the vphone can be. What the queue
+/// The last checks before an operation runs, for a system with no dpkg: a
+/// device set up without a bootstrap, as the vphone can be. What a plan
 /// installs there may need a shell that is not there yet, so the user
 /// chooses Bootstrap Install, which places every file before any script
 /// runs, or goes on and is told first which packages run scripts.

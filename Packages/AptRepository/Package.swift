@@ -55,9 +55,11 @@ let package = Package(
                 .product(name: "IrisinProtocol", package: "IrisinKit"),
             ]
         ),
+        // the catalogue benchmark solves with the shipped adapters' preview,
+        // as the app does
         .executableTarget(
             name: "ResolverProbe",
-            dependencies: ["AptResolver", .product(name: "IrisinProtocol", package: "IrisinKit")],
+            dependencies: ["AptResolver", .product(name: "IrisinAdapter", package: "IrisinKit")],
             path: "Tools/ResolverProbe"
         ),
         .executableTarget(
@@ -71,11 +73,14 @@ let package = Package(
         .testTarget(name: "AptResolverTests", dependencies: ["AptResolver"]),
         .testTarget(
             name: "AptRepositoryTests",
-            // the resolver for `ResolutionPoolDatabaseTests`, a pool read from
-            // a database and the database written under it
+            // the adapter only for `AdapterConformanceTests`, which needs both
+            // halves: a package prepared here, then adapted there; the
+            // resolver for `ResolutionPoolDatabaseTests`, a pool read from a
+            // database and the database written under it
             dependencies: [
                 "AptRepository",
                 "AptResolver",
+                .product(name: "IrisinAdapter", package: "IrisinKit"),
             ],
             // a Debian machine's dpkg status file and a version list sorted
             // by apt itself, for the parser and the comparison

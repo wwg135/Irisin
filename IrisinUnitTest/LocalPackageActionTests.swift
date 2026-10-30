@@ -97,37 +97,4 @@ struct LocalPackageActionTests {
         #expect(!PackageMenu.eligibleActions(for: local).contains { $0.descriptor == .remove })
     }
 
-    @Test
-    func anotherFileAtTheSameVersionCanReplaceTheQueuedPackage() throws {
-        let identity = "test.local-replacement"
-        let file = FileManager.default.temporaryDirectory.appendingPathComponent("first.deb")
-        let local = Package(identity: identity, payload: ["1": [
-            "architecture": "all", "filename": file.absoluteString,
-        ]])
-        let request = ResolutionAction.install(local)
-        let plan = try PackageResolver.resolve(
-            request: .init(actions: [request]),
-            snapshot: .init(packages: [], installed: [], architecture: "iphoneos-arm64")
-        )
-        let manager = PackageQueue.shared
-        try #require(manager.plan == nil)
-        defer { manager.clear() }
-        try #require(manager.commit(.init(
-            actions: [request], cleanup: [], plan: plan, notices: [], revision: manager.revision
-        )))
-        #expect(PackageBannerView(package: local).obtainQuickAction() == nil)
-
-        let other = Package(identity: identity, payload: ["1": [
-            "architecture": "all", "filename": file.deletingLastPathComponent().appendingPathComponent("second.deb").absoluteString,
-        ]])
-        #expect(PackageBannerView(package: other).obtainQuickAction()?.descriptor == .replace)
-        var metadata = try #require(local.latestMetadata)
-        metadata["sha256"] = "changed-archive"
-        let changed = Package(identity: identity, payload: ["1": metadata])
-        #expect(PackageBannerView(package: changed).obtainQuickAction()?.descriptor == .replace)
-        let remote = Package(identity: identity, payload: ["1": [
-            "architecture": "all", "filename": "https://example.test/package.deb",
-        ]], repoRef: URL(string: "https://example.test/"))
-        #expect(PackageBannerView(package: remote).obtainQuickAction()?.descriptor == .replace)
-    }
 }

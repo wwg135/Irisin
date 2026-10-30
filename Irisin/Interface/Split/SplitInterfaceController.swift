@@ -53,11 +53,6 @@ class SplitInterfaceController: UISplitViewController {
         navigator.delegate = self
     }
 
-    /// The Queue card, as a tap on it.
-    func showQueue() {
-        sidebar.cards.open(.queue)
-    }
-
     private var isSidebarHidden = false
 
     /// One item per screen: a bar button item has one view, and a push
@@ -105,23 +100,13 @@ extension SplitInterfaceController: UISplitViewControllerDelegate, UINavigationC
         animated _: Bool
     ) {
         syncSidebarToggle(on: viewController)
-        // the Queue page and what it pushes need no way to the queue
-        column.isQueueOpen = navigationController.viewControllers.first is QueueController
     }
 }
 
 /// Hosts a column's content inside the column's safe area, so a screen
-/// that lays out to its view's edges lays out to the visible pane. The
-/// queue's bar floats at the bottom of that pane: the sidebar's Queue card
-/// says as much while it is there, and the sidebar can be hidden.
+/// that lays out to its view's edges lays out to the visible pane.
 final class ColumnHostController: UIViewController {
     let content: UIViewController
-    private var queueBar: QueueBarDock?
-
-    /// The content shows the Queue page: see `QueueBarDock.isQueueOpen`.
-    var isQueueOpen = false {
-        didSet { queueBar?.isQueueOpen = isQueueOpen }
-    }
 
     init(content: UIViewController) {
         self.content = content
@@ -151,20 +136,6 @@ final class ColumnHostController: UIViewController {
             x.trailing.top.bottom.equalToSuperview()
         }
         content.didMove(toParent: self)
-
-        let pane = UILayoutGuide()
-        view.addLayoutGuide(pane)
-        pane.snp.makeConstraints { x in
-            x.edges.equalTo(content.view)
-        }
-        queueBar = QueueBarDock(host: self, centeredIn: pane) { [content] in [content] }
-        queueBar?.isQueueOpen = isQueueOpen
-        queueBar?.bottomInset = view.safeAreaInsets.bottom
-    }
-
-    override func viewSafeAreaInsetsDidChange() {
-        super.viewSafeAreaInsetsDidChange()
-        queueBar?.bottomInset = view.safeAreaInsets.bottom
     }
 
     override var childForStatusBarStyle: UIViewController? {

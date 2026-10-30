@@ -10,7 +10,7 @@ import UIKit
 
 /// What a sidebar card opens in the detail column.
 enum DetailPage {
-    case dashboard, settings, installed, queue
+    case dashboard, settings, installed
 }
 
 /// The detail column. The page a sidebar card picks is the stack's root,
@@ -20,7 +20,6 @@ class DetailNavigator: UINavigationController {
     private let dashboard = SplitDashboardController()
     private let settings = SettingsController()
     private let installed = SplitInstalledController()
-    private let queue = QueueController()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,7 +34,6 @@ class DetailNavigator: UINavigationController {
         case .dashboard: dashboard
         case .settings: settings
         case .installed: installed
-        case .queue: queue
         }
         guard topViewController !== target else { return }
         // one step: a pop followed by a push lands on a stack two screens

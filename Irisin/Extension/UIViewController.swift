@@ -15,7 +15,7 @@ extension UIViewController {
     /// navigator on push and pop, and the sheet on the iPad jumps with it.
     /// The iPad adds the navigation bar's height to it, so a sheet whose
     /// pages differ in bar height (a large title over plain ones) takes
-    /// the system's size instead: see `QueueController.showConsole`.
+    /// the system's size instead.
     var preferredPopOverSize: CGSize {
         CGSize(width: 555, height: 555)
     }

@@ -65,18 +65,6 @@ class SearchCell: UITableViewCell {
                 insertValue(with: shown)
             }
             .store(in: &subscriptions)
-        // the queue's mark comes and goes with the queue
-        NotificationCenter.default.publisher(for: .PackageQueueChanged)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self, let shown else { return }
-                switch shown.associatedValue {
-                case .package, .installed: insertValue(with: shown)
-                case .repository, .author: return
-                }
-            }
-            .store(in: &subscriptions)
-
         selectionStyle = .gray
 
         let text = UIStackView(arrangedSubviews: [title, subtitle, describe]).then {
@@ -260,7 +248,6 @@ class SearchCell: UITableViewCell {
         image.showIcon(of: package)
         let installed = PackageCenter.default.obtainPackageInstallationInfo(with: package.identity)?.version
         PackageListRow.drawBadge(on: indicator, for: package, installedVersion: installed)
-        PackageListRow.drawQueueBadge(on: indicator, for: package)
         // the mark is drawn; this says it
         accessibilityValue = installed == nil ? nil : String(localized: "Installed")
     }

@@ -26,12 +26,6 @@ class SidebarCards: UIView {
         defaultSelected: false
     )
 
-    private let queueCard = SidebarCard(
-        text: String(localized: "Queue"),
-        symbol: "tray.full.fill",
-        defaultSelected: false
-    )
-
     private let installedCard = SidebarCard(
         text: String(localized: "Installed"),
         symbol: "shippingbox.fill",
@@ -67,31 +61,14 @@ class SidebarCards: UIView {
             x.trailing.equalTo(self.snp.trailing)
         }
 
-        addSubview(queueCard)
-        queueCard.cardClosure = { [weak self] in self?.open(.queue) }
-        queueCard.snp.makeConstraints { x in
-            x.top.equalTo(self.snp.centerY).offset(8)
-            x.leading.equalTo(self.snp.leading)
-            x.bottom.equalTo(self.snp.bottom).offset(-8)
-            x.trailing.equalTo(self.snp.centerX).offset(-8)
-        }
-
         addSubview(installedCard)
         installedCard.cardClosure = { [weak self] in self?.open(.installed) }
         installedCard.snp.makeConstraints { x in
             x.top.equalTo(self.snp.centerY).offset(8)
-            x.leading.equalTo(self.snp.centerX).offset(8)
+            x.leading.equalTo(self.snp.leading)
             x.bottom.equalTo(self.snp.bottom).offset(-8)
             x.trailing.equalTo(self.snp.trailing)
         }
-
-        NotificationCenter.default.publisher(for: .PackageQueueChanged)
-            .receive(on: DispatchQueue.main)
-            .map { _ in QueueController.badge }
-            .prepend(QueueController.badge)
-            .removeDuplicates()
-            .sink { [weak self] badge in self?.queueCard.badgeText = badge ?? "" } // empty for animation
-            .store(in: &subscriptions)
 
         NotificationCenter.default.publisher(for: PackageCenter.packageRecordChanged)
             .receive(on: DispatchQueue.main)
@@ -107,13 +84,12 @@ class SidebarCards: UIView {
         case .dashboard: select(dashboardCard)
         case .settings: select(settingsCard)
         case .installed: select(installedCard)
-        case .queue: select(queueCard)
         }
         onSelect?(page)
     }
 
     private func select(_ card: SidebarCard) {
-        for other in [dashboardCard, settingsCard, queueCard, installedCard] where other !== card {
+        for other in [dashboardCard, settingsCard, installedCard] where other !== card {
             other.deselect()
         }
         card.select()

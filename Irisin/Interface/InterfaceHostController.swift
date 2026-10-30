@@ -42,16 +42,6 @@ class InterfaceHostController: UIViewController {
         return nil
     }
 
-    /// Shows the Queue page: whatever sheet is up leaves, then the Queue
-    /// card or tab is selected as a tap selects it.
-    func openQueue() {
-        if presentedViewController != nil {
-            dismiss(animated: true)
-        }
-        (current as? SplitInterfaceController)?.showQueue()
-        (current as? TabInterfaceController)?.showQueue()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .plainBackground

@@ -48,7 +48,8 @@ class RepositoriesNavigator: UINavigationController {
 class RepositoriesController: UIViewController {
     private var subscriptions = Set<AnyCancellable>()
 
-    let tableView = UITableView(frame: .zero, style: .plain)
+    // Use insetGrouped to render sections as card-like groups
+    let tableView = UITableView(frame: .zero, style: .insetGrouped)
     let refreshControl = SettlingRefreshControl()
     private let cellIdentity = "repository"
 
@@ -64,6 +65,55 @@ class RepositoriesController: UIViewController {
     /// onboarding added in between would be missing.
     private var dataSourceCache: [URL] = []
     private var lastUpdateTouched: Date?
+
+    private static let pinnedRepositoryKey = "IrisinPinnedRepositoriesKey"
+
+    static func normalizedRepositoryString(_ url: URL) -> String {
+        let value = url.absoluteString.lowercased()
+        return value.hasSuffix("/") ? String(value.dropLast()) : value
+    }
+
+    static func pinnedRepositoryUrls() -> [String] {
+        (UserDefaults.standard.array(forKey: Self.pinnedRepositoryKey) as? [String] ?? [])
+            .map { $0.lowercased() }
+    }
+
+    static func isPinned(_ url: URL) -> Bool {
+        let key = normalizedRepositoryString(url)
+        return pinnedRepositoryUrls().contains(key)
+    }
+
+    static func togglePinned(_ url: URL) {
+        let key = normalizedRepositoryString(url)
+        var pinned = pinnedRepositoryUrls()
+        if let index = pinned.firstIndex(of: key) {
+            pinned.remove(at: index)
+        } else {
+            pinned.insert(key, at: 0)
+        }
+        UserDefaults.standard.set(pinned, forKey: Self.pinnedRepositoryKey)
+    }
+
+    static func orderedRepositoryUrls(_ urls: [URL]) -> [URL] {
+        let pinnedStrings = pinnedRepositoryUrls()
+        let pinnedSet = Set(pinnedStrings)
+        let pinned = urls
+            .filter { pinnedSet.contains(normalizedRepositoryString($0)) }
+            .sorted { lhs, rhs in
+                let lhsIndex = pinnedStrings.firstIndex(of: normalizedRepositoryString(lhs)) ?? Int.max
+                let rhsIndex = pinnedStrings.firstIndex(of: normalizedRepositoryString(rhs)) ?? Int.max
+                return lhsIndex < rhsIndex
+            }
+        let other = urls.filter { !pinnedSet.contains(normalizedRepositoryString($0)) }
+        return pinned + other
+    }
+
+    static func removePinned(_ url: URL) {
+        let key = normalizedRepositoryString(url)
+        var pinned = pinnedRepositoryUrls()
+        pinned.removeAll { $0 == key }
+        UserDefaults.standard.set(pinned, forKey: Self.pinnedRepositoryKey)
+    }
 
     nonisolated enum Row: Hashable {
         case repository(URL)
@@ -159,27 +209,44 @@ class RepositoriesController: UIViewController {
         let urls = shownUrls
         let isSearching = !searchText.isEmpty
         var snapshot = NSDiffableDataSourceSnapshot<Int, Row>()
-        snapshot.appendSections([0])
+        // two sections: 0 = pinned, 1 = others
+        snapshot.appendSections([0, 1])
+
         if dataSourceCache.isEmpty, !isSearching {
-            snapshot.appendItems([.none])
+            snapshot.appendItems([.none], toSection: 1)
         } else {
-            snapshot.appendItems(urls.map(Row.repository))
+            let pinnedStrings = Self.pinnedRepositoryUrls()
+            let pinnedSet = Set(pinnedStrings)
+
+            let pinnedUrls = urls
+                .filter { pinnedSet.contains(Self.normalizedRepositoryString($0)) }
+                .sorted { lhs, rhs in
+                    let lhsIndex = pinnedStrings.firstIndex(of: Self.normalizedRepositoryString(lhs)) ?? Int.max
+                    let rhsIndex = pinnedStrings.firstIndex(of: Self.normalizedRepositoryString(rhs)) ?? Int.max
+                    return lhsIndex < rhsIndex
+                }
+
+            let otherUrls = urls.filter { !pinnedSet.contains(Self.normalizedRepositoryString($0)) }
+
+            snapshot.appendItems(pinnedUrls.map(Row.repository), toSection: 0)
+            snapshot.appendItems(otherUrls.map(Row.repository), toSection: 1)
         }
+
         snapshot.reconfigureItems(survivingFrom: diffableDataSource.snapshot())
         diffableDataSource.apply(snapshot, animatingDifferences: animatingDifferences)
         // a search that holds every row back says so; a blank page looks broken
         tableView.backgroundView = isSearching && urls.isEmpty ? emptyStateLabel : nil
     }
 
-    private func reloadDataSource(animated: Bool = true) {
+    func reloadDataSource(animated: Bool = true) {
         // Before the repositories are read there is no list to show, and
         // "No repositories" would be a guess; the first list arrives whole.
         guard RepositoryCenter.default.isLoaded else { return }
         let animated = animated && hasListedRepositories
         hasListedRepositories = true
-        dataSourceCache = RepositoryCenter
-            .default
-            .obtainRepositoryUrls(sortedByName: true)
+        dataSourceCache = Self.orderedRepositoryUrls(
+            RepositoryCenter.default.obtainRepositoryUrls(sortedByName: true)
+        )
         applySnapshot(animatingDifferences: animated && tableView.shouldAnimateDiff)
         updateFooter()
     }
@@ -325,6 +392,7 @@ class RepositoriesController: UIViewController {
     /// Drops a repository and everything cached for it. The sidebar removes
     /// through here too.
     static func remove(_ url: URL) {
+        removePinned(url)
         // first: the sign-in record is found through the repository, which
         // must still be registered
         VendorAccount.shared.deleteSignInRecord(for: url)
