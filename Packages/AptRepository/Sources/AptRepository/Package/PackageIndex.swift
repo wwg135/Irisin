@@ -168,7 +168,9 @@ public struct PackageIndex: Sendable {
     /// identity with no origin (another package manager installed it, or
     /// dpkg by hand) has no repository to keep to, so every repository's
     /// newer version is on offer, as apt would have it; installing one makes
-    /// that repository the origin. A version built for another bootstrap is
+    /// that repository the origin. Neither has one whose repository was
+    /// removed or no longer lists it, as the resolver has it
+    /// (`ResolutionSnapshot.origins`). A version built for another bootstrap is
     /// an update only while `offersAdaptedUpdates` says so: what converted
     /// once and works may not convert as well the next time.
     /// - Parameters:
@@ -177,8 +179,10 @@ public struct PackageIndex: Sendable {
     /// - Returns: the newer versions, one per repository that may offer one
     public func obtainUpdateForPackage(with identity: String, version current: String) -> [Package] {
         guard !blockedUpdateTable.contains(identity) else { return [] }
-        let offers = if let origin = obtainInstallOrigin(of: identity)?.repoRef {
-            [db.package(identity: identity, repo: origin)].compactMap(\.self)
+        let offers = if let origin = obtainInstallOrigin(of: identity)?.repoRef,
+                        let listed = db.package(identity: identity, repo: origin)
+        {
+            [listed]
         } else {
             db.packages(identity: identity)
         }
