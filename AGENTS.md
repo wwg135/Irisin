@@ -5,7 +5,7 @@ both. **iOS first.** Apple TV and Vision Pro get the launchpad
 (`IrisinLaunchpad`): the app's services and one screen of its own, managed
 from a browser on the same network (`Documentation/WebManagement.md`). The
 privileged layer (`irisind`, `irisin-install`) builds for Apple TV too: tvOS
-17, RootHide alone, whose decisions and open questions are
+16, RootHide alone, whose decisions and open questions are
 `Documentation/AppleTV.md`. No bootstrap serves Vision Pro yet, so the
 launchpad there browses, and installs only in the simulator.
 The app runs as `mobile` and never becomes root; the
@@ -397,14 +397,16 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   are polled from a feed (`OperationFeed`), not pushed.
 - **Onboarding's recommended repositories are data, not code.**
   `Resources/Environments/default-list-<architecture>.plist`, one per
-  bootstrap (Apple TV's, `appletvos-arm64e`, is apt.owngoal.dev alone, the
-  one repository that publishes for it), and `default-list-managed.plist`,
-  shipped empty for the jailbreak to overwrite: with any entry it is the list, whatever the
+  bootstrap, and `default-list-managed.plist`, shipped empty for the
+  jailbreak to overwrite: with any entry it is the list, whatever the
   architecture (`RecommendedRepositories`). No list recommends nothing, and
   the page has no such section. Each entry is a source line with optional
   inclusive iOS major bounds, which is how Procursus's per-release suite
-  is picked. `package-deb.sh` keeps the flavor's own list and the managed
-  one and `verify-deb.sh` checks it; `PLIST_FILE_OUTPUT_FORMAT` keeps them
+  is picked. RootHide's bootstrap packages come from OwnGoal Stripe
+  (`deb https://stripe.owngoal.dev 1900 main`, built for iOS and tvOS 16
+  and later) on iOS 16 and later and on Apple TV, beside apt.owngoal.dev;
+  iOS 15 keeps roothide's own Procursus build. `package-deb.sh` keeps the
+  flavor's own list and the managed one and `verify-deb.sh` checks it; `PLIST_FILE_OUTPUT_FORMAT` keeps them
   XML, so the managed file's instructions reach the device.
 - **Swift 6 language mode, everywhere.** `SWIFT_VERSION = 6.0` on every
   target; concurrency diagnostics are errors, not warnings to be silenced.
@@ -499,7 +501,7 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   owner's questions and the operation feed), `Extension/`.
 - `IrisinLaunchpad/` — the launchpad, product `irisin` (bundle
   `wiki.qaq.irisin`, at `/Applications/irisin.app` like the app, which is
-  how irisind admits it), tvOS 17 and visionOS 2: one screen with the
+  how irisind admits it), tvOS 16 and visionOS 2: one screen with the
   address, the code and its QR code (`LaunchpadController`), the owner's
   question as the system's alert (`QuestionAlert`), its own tokens and
   asset catalog.
@@ -563,7 +565,8 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   `IcliKit` asks of IrisinKit and everything above it;
   `Scripts/check-floor-sources.py` fails `make check` on one that does
   not, on an SF Symbol newer than the floor, and on a recommended list
-  without one Procursus suite for each iOS release from the floor up. PackageDepiction's views are
+  without one bootstrap suite (Procursus, or OwnGoal Stripe) for each iOS
+  release from the floor up. PackageDepiction's views are
   laid out with SnapKit and configured with Then, like the app: a depiction
   is Auto Layout throughout, so its height is its own and nothing measures it.
   Everything with a usable upstream release is a remote package reference.
@@ -765,12 +768,30 @@ is `/var/jb/var/log/irisin-install.log`.
   otherwise it is looked up with `dlsym`, as `irisind` does
   `xpc_copy_entitlement_for_token`, with SecTask behind it. The list's top
   half is icli's own; keep the two in step.
-- **The project is built with Xcode 27 and CI has 26.6.** The runner image
-  has no Xcode 27, so one thing is a workaround and comes out the day it
-  does: `UITabBarController.prominentTabIdentifier` is in the iOS 27 SDK and
-  not in Xcode 26's, and `#available` guards the call, not the reference, so
-  `TabInterfaceController` sets it through KVC under its `iOS 27.0` check.
-  Same behaviour, any SDK.
+- **A device build links the iOS 27.1 SDK, and CI's is Xcode 27.1's.** On
+  an iPhone Duo the SDK decides the layout: built with 27.1 the app fills
+  either display edge to edge and its bars stand on the side, a leading or
+  trailing safe-area inset (the outer display, and the inner one in
+  landscape); built with 27.0 it is kept clear of the status bar's side, and
+  before 27 it sits in a box. `_build-ios` refuses an older iPhoneOS SDK
+  (`MINIMUM_IPHONEOS_SDK`), and the build job runs on the `xcode-27` runner
+  with Xcode 27.1 chosen by name, not the image's newest (a 27.2 release
+  candidate); the host tests stay on `macos-26`, and so does the Apple TV
+  package, in a job of its own: icli 0.10's `tvos-iokit-stub.sh` retargets
+  the iPhoneOS SDK's `IOKit.tbd` by `arm64e-ios`, Xcode 27's also names
+  `arm64e.x1-ios`, and the script stops at it ("still names an iOS
+  target"), so `make deb-appletv` needs Xcode 26 until icli retargets that
+  too. A third job puts the three packages, the dSYMs and their checksums
+  in the one artifact `release.yml` takes. A page keeps to the safe
+  area on every edge: a scroll view adjusts only the axis it scrolls on, and
+  the dashboard's flow layout, laid out from its own content inset, put its
+  last column and the Featured See All under the bar's Settings button
+  (`contentInsetAdjustmentBehavior = .always` now). Xcode 27.0 has no 27.1
+  simulator SDK, but a 27.0 simulator build takes the 27.1 layout on the
+  27.1 runtime once both places that name the SDK say 27.1, the main
+  executable's `LC_BUILD_VERSION` (`vtool -set-build-version`) and the
+  `DT*` keys of its `Info.plist`, and it is signed again: the load command
+  alone changed nothing. A layout check only, never a package.
 - **LNPopupController crashed the iPad on launch and is gone.** Its
   `UISplitViewController` category asked a legacy-style split controller
   `isShowingColumn:`, which iOS 26 answers with an exception, and nothing
