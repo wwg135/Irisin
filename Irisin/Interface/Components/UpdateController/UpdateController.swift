@@ -92,6 +92,7 @@ class UpdateController: UIViewController, UITableViewDelegate {
         .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
         .sink { [weak self] _ in self?.reload() }
         .store(in: &subscriptions)
+
     }
 
     override func viewWillAppear(_ animated: Bool) {

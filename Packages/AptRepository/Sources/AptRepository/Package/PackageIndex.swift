@@ -168,11 +168,11 @@ public struct PackageIndex: Sendable {
     /// identity with no origin (another package manager installed it, or
     /// dpkg by hand) has no repository to keep to, so every repository's
     /// newer version is on offer, as apt would have it; installing one makes
-    /// that repository the origin. Neither has one whose repository was
-    /// removed or no longer lists it, as the resolver has it
-    /// (`ResolutionSnapshot.origins`). A version built for another bootstrap is
-    /// an update only while `offersAdaptedUpdates` says so: what converted
-    /// once and works may not convert as well the next time.
+    /// that repository the origin. If its repository was removed or no longer
+    /// lists it, every repository's newer version is on offer too, as the
+    /// resolver has it (`ResolutionSnapshot.origins`). A version built for
+    /// another bootstrap is an update only while `offersAdaptedUpdates` says
+    /// so: what converted once and works may not convert as well the next time.
     /// - Parameters:
     ///   - identity: identity in string
     ///   - current: current version
