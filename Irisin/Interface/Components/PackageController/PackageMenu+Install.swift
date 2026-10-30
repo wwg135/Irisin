@@ -10,18 +10,16 @@ import UIKit
 
 extension PackageMenu {
     /// The alert behind the Unsupported button and behind any install path a
-    /// foreign flavour still reaches: a `.deb` opened by hand, or a record
-    /// dpkg already has. Nothing here converts it; Apelin can build it again
-    /// for this bootstrap.
+    /// foreign flavour still reaches.
     static func presentUnsupportedArchitecture(of package: Package, from host: UIViewController) {
         host.presentNotice(
             title: "Unsupported Architecture",
-            message: String(localized: "This package is built for \(package.architectures.joined(separator: ", ")). This device uses \(PackagedArchitecture.architecture). Choose a compatible package, or use Apelin to rebuild this one for this device.")
+            message: String(localized: "This package is built for \(package.architectures.joined(separator: ", ")). This device uses \(PackagedArchitecture.architecture). Choose a compatible package.")
         )
     }
 
     static let resolveInstallRequest: Item.Block = { package, host, _ in
-        guard package.isSupportedOnDevice else {
+        guard package.isSupportedOnDevice || package.localFileURL != nil else {
             presentUnsupportedArchitecture(of: package, from: host)
             return
         }
@@ -42,12 +40,12 @@ extension PackageMenu {
         // alert is about to talk them out of
         guard await keeps(selected, from: host) else { return }
         if selected.localFileURL != nil {
-            await enqueue([.install(selected)], from: host)
+            await install([.install(selected)], from: host)
             return
         }
 
         guard selected.isCommercial else {
-            await enqueue([.install(selected)], from: host)
+            await install([.install(selected)], from: host)
             return
         }
         guard let repoUrl = signedInStore(of: selected, from: host) else { return }
@@ -65,15 +63,16 @@ extension PackageMenu {
         // gone before the next sheet: the host cannot present while it is leaving
         await alert.dismissFinishing(animated: true)
         if case let .purchased(purchased) = check {
-            await enqueue([.install(purchased)], from: host)
+            await install([.install(purchased)], from: host)
         } else {
             await present(check, from: host)
         }
     }
 
     /// Whether the request goes on with the selected record, after a look
-    /// at what else the repositories offer under its identifier: a newer
-    /// version. Taking a recommendation opens its
+    /// at what else the repositories offer under its identifier. One built
+    /// for this system comes ahead of one an adapter would rewrite, then a
+    /// newer version of the same build. Taking a recommendation opens its
     /// page and queues nothing: the request for it is made there, by the
     /// user, with the package in front of them.
     static func keeps(_ selected: Package, from host: UIViewController) async -> Bool {
@@ -81,14 +80,32 @@ extension PackageMenu {
         let advice = PackageSelectionAdvice(
             selected: selected,
             offers: Array(center.obtainPackageSummary(with: selected.identity).values),
-            device: AptEnvironment.current.deviceArchitecture
+            device: AptEnvironment.current.deviceArchitecture,
+            installable: AptEnvironment.current.installableArchitectures
         )
         let installed = center.obtainPackageInstallationInfo(with: selected.identity)?.version
         let anyway = anywayTitle(for: selected, installedVersion: installed)
 
+        if let native = advice.nativeAlternative(installedVersion: installed) {
+            let choice = await host.askRecommendation(
+                title: "Better Package Available",
+                message: String(localized: "You selected version \(selected.latestVersion ?? ""), built for \(selected.architectures.joined(separator: ", ")), which would be installed in compatibility mode. \(repositoryName(of: native)) offers version \(native.latestVersion ?? "") built for this system."),
+                anywayTitle: anyway
+            )
+            switch choice {
+            case .recommended:
+                host.present(next: PackageController(package: native))
+                return false
+            case .anyway: break
+            case .cancel: return false
+            }
+        }
         // blocked updates are news the user asked not to hear
         if !center.blockedUpdateTable.contains(selected.identity),
-           let newer = advice.newerAlternative(installedVersion: installed)
+           let newer = advice.newerAlternative(
+               installedVersion: installed,
+               adaptedUpdates: center.offersAdaptedUpdates
+           )
         {
             let choice = await host.askRecommendation(
                 title: "Newer Version Available",
@@ -108,9 +125,6 @@ extension PackageMenu {
 
     /// The button that goes on as asked, named after the menu item that asked.
     private static func anywayTitle(for selected: Package, installedVersion: String?) -> String {
-        if PackageQueue.shared.queuedPackage(of: selected.identity) != nil {
-            return String(localized: "Replace Anyway")
-        }
         guard let installedVersion, let version = selected.latestVersion else {
             return String(localized: "Install Anyway")
         }

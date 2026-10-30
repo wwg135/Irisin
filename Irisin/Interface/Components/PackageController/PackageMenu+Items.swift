@@ -11,32 +11,10 @@ import UIKit
 extension PackageMenu {
     static let allMenuActions: [Item] = [
         .init(
-            descriptor: .dequeue,
-            block: { package, host, _ in
-                await QueueChangeController.show(.withdraw(package.identity), from: host)
-            },
-            eligibleForPerform: { package in
-                PackageQueue.shared.isQueued(package.identity)
-            }
-        ),
-        .init(
-            descriptor: .replace,
-            block: resolveInstallRequest,
-            eligibleForPerform: { package in
-                guard let queued = PackageQueue.shared.queuedPackage(of: package.identity),
-                      package.isSupportedOnDevice,
-                      package.localFileURL != nil || package.obtainDownloadLink() != PackageBadUrl,
-                      let version = package.latestVersion,
-                      let requested = PackageCenter.default.trim(package: package, toVersion: version)
-                else { return false }
-                return queued != requested
-            }
-        ),
-        .init(
             descriptor: .directInstall,
             block: resolveInstallRequest,
             eligibleForPerform: { package in
-                package.localFileURL != nil && package.isSupportedOnDevice
+                package.localFileURL != nil
                     && PackageCenter.default.obtainPackageInstallationInfo(with: package.identity) == nil
             }
         ),
@@ -60,7 +38,7 @@ extension PackageMenu {
             descriptor: .update,
             block: resolveInstallRequest,
             eligibleForPerform: { package in
-                if package.obtainDownloadLink() == PackageBadUrl || !package.isSupportedOnDevice {
+                if package.obtainDownloadLink() == PackageBadUrl {
                     return false
                 }
                 // this row is the candidate, whichever repository it is
@@ -109,7 +87,7 @@ extension PackageMenu {
         .init(
             descriptor: .remove,
             block: { package, host, _ in
-                await enqueue([.remove(package.identity)], from: host)
+                await install([.remove(package.identity)], from: host)
             },
             eligibleForPerform: { package in
                 PackageCenter

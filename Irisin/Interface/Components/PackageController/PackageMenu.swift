@@ -14,9 +14,6 @@ import UIKit
 @MainActor
 enum PackageMenu {
     enum Action: String, CaseIterable {
-        case dequeue
-        /// The queue installs a different package record: this one takes its place.
-        case replace
         case directInstall
         case install
         case reinstall
@@ -32,10 +29,6 @@ enum PackageMenu {
 
         func describe() -> String {
             switch self {
-            case .dequeue:
-                String(localized: "Remove from Queue")
-            case .replace:
-                String(localized: "Replace")
             case .directInstall:
                 String(localized: "Direct Install")
             case .install:
@@ -65,10 +58,6 @@ enum PackageMenu {
 
         func icon() -> UIImage? {
             switch self {
-            case .dequeue:
-                UIImage(systemName: "minus.circle")
-            case .replace:
-                UIImage(systemName: "arrow.left.arrow.right.circle")
             case .directInstall:
                 UIImage(systemName: "paperplane")
             case .install:
@@ -111,22 +100,13 @@ enum PackageMenu {
     /// The menu's inline sections, in order: the transaction, then another
     /// version.
     static let menuSections: [[Action]] = [
-        [.dequeue, .replace, .directInstall, .install, .update, .downgrade, .remove],
+        [.directInstall, .install, .update, .downgrade, .remove],
         [.versionControl],
-    ]
-
-    /// The requests a queued package no longer offers: it leaves the queue
-    /// first.
-    static let requestActions: Set<Action> = [
-        .directInstall, .install, .reinstall, .downgrade, .update, .remove,
     ]
 
     /// What the package offers now, in menu order.
     static func eligibleActions(for package: Package) -> [Item] {
-        let queued = PackageQueue.shared.isQueued(package.identity)
-        return allMenuActions.filter { action in
-            !(queued && requestActions.contains(action.descriptor)) && action.eligibleForPerform(package)
-        }
+        allMenuActions.filter { $0.eligibleForPerform(package) }
     }
 
     /// What goes under Advanced, a submenu at the end.
@@ -200,14 +180,22 @@ enum PackageMenu {
         ) ?? origin ?? package
     }
 
-    /// Every request in the app goes here: the change sheet shows what it
-    /// does to the queue and adds it. Returns once the sheet is on its way in.
-    static func enqueue(_ actions: [ResolutionAction], from host: UIViewController) async {
-        await QueueChangeController.show(.actions(actions), from: host)
-    }
 }
 
 extension PackageMenu {
+    /// Every install, update and removal in the app goes here: it downloads,
+    /// patches if the package needs it and runs in a popup over the page.
+    /// A change the popup cannot take is said in an alert.
+    static func install(
+        _ actions: [ResolutionAction],
+        notices: [String] = [],
+        from host: UIViewController
+    ) async {
+        if let reason = await QuickInstallController.start(actions, notices: notices, from: host) {
+            host.presentNotice(title: "Error", message: reason)
+        }
+    }
+
     /// A package row's long press: the package page as the preview, and the
     /// page's own menu.
     static func contextMenu(
