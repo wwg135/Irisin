@@ -1,20 +1,72 @@
-# wwg135/Irisin
+# Irisin
 
-An APT source for jailbroken iOS, published with Apelin.
+## Modern. Fast. Beautiful.
 
-Add `https://wwg135.github.io/Irisin/` in Irisin.
+Irisin is a package manager for jailbroken iPhone and iPad on iOS and iPadOS 15 or later. It works with both rootless jailbreaks, such as Dopamine, and roothide.
 
-## How it works
+![Preview](Resources/main.jpeg)
 
-- Packages are the `.deb` files in `debs/`, named
-  `<Package>_<Version>_<Architecture>.deb`. Apelin's Distribute… page
-  publishes a release build here; a `.deb` pushed by hand works the same.
-- On every push to `main-4.0`, `.github/workflows/update-repository.yml` runs
-  `scripts/update-repository.sh`, which indexes `debs/` into `Packages`,
-  `Packages.xz` and `Release`, and publishes the site to GitHub Pages.
-  Never commit those indexes or `_site/`.
-- `depictions/<package id>/` holds a package's depiction, icon and
-  banner; `sileo-featured.json` the banners Irisin shows at the top of the
-  source; `CydiaIcon.png`, when present, the source's icon.
+## Features
 
-Pages may serve the previous index for up to ten minutes after a push.
+- Designed for both iPhone and iPad
+- A welcome page on first launch, with recommended repositories for your jailbreak
+- Add a repository from a link, and export or import your repository list to move it to another device
+- Search across packages, repositories, and authors, and narrow any package list with its own search bar
+- Package pages that follow light and dark mode
+- Install any version a repository offers, and block updates for packages you want to keep as they are
+- Buy paid packages and sign in to your vendor accounts
+- Rebuild icons and reload the Home Screen from Settings
+- Update Irisin from inside Irisin
+- Available in 19 languages
+- Open source under the MIT License
+
+## Installation
+
+Download the package for your jailbreak from [Releases](https://github.com/Lakr233/Irisin/releases):
+
+| Jailbreak | Package |
+| --- | --- |
+| roothide | `iphoneos-arm64e` |
+| rootless (`/var/jb`) | `iphoneos-arm64` |
+
+Irisin checks your jailbreak when it opens. If you installed the wrong package, Irisin names the architecture it was built for and the one your device uses, asks you to install the matching package, and does not open.
+
+### First-time CFW preparation
+
+On a fresh custom firmware bootstrap, an early package may need a program from a later package before that later package can be configured. For example, `debianutils` may need `bash` to run its configuration script, while `bash` needs `debianutils` configured first.
+
+Add the packages to the queue, then **long-press Execute** and choose **Bootstrap Install**. Irisin first extracts the files from every package in that queue, then runs the normal unpack, maintainer-script, and configuration sequence. This makes `bash` available to the early script without skipping package checks or script failures. The option appears only for a queue of new packages with no removals; use the regular Execute button after the initial preparation.
+
+On a system where dpkg is not installed yet, Execute asks first and offers **Bootstrap Install** there too. **Install Anyway** lists the packages that run maintainer scripts before anything is installed, since those scripts are likely to fail without a bootstrap.
+
+## Report a Problem
+
+Choose Report Issue in Settings, or [open an issue on GitHub](https://github.com/Lakr233/Irisin/issues/new). Search the existing issues first to avoid duplicates.
+
+If Irisin crashes or an installation fails, include the log from View Logs in Settings. The log may contain your searches and repository addresses, so review it before you share it.
+
+## Build from Source
+
+Open `Irisin.xcworkspace` in Xcode. To build the packages:
+
+```sh
+make harness      # run the tests on the Mac
+make deb-all      # build the roothide and rootless packages
+make install      # update a device connected through `iproxy 2333 22`
+```
+
+You need `ldid` and `dpkg` from your preferred package manager. Notes for contributors are in [AGENTS.md](AGENTS.md).
+
+## Acknowledgements
+
+This product includes software developed by the Sileo Team.
+
+#### "While the world sleeps, we dream."
+
+## Sponsor
+
+[LookInside](https://lookinside-app.com/) lets you inspect the interface of a running iOS or macOS app from your Mac.
+
+---
+
+Copyright © 2026 OwnGoal Studio. Released under the [MIT License](LICENSE).
