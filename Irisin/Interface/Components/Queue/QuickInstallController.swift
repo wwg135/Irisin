@@ -82,6 +82,49 @@ private final class ProgressIndicator: UIView {
     }
 }
 
+/// One package of the plan: its name, where it stands and a thin bar.
+private final class PackageProgressRow: UIView {
+    private let nameLabel = UILabel().then {
+        $0.font = .body
+        $0.textColor = .textTitle
+        $0.lineBreakMode = .byTruncatingMiddle
+    }
+
+    private let statusLabel = UILabel().then {
+        $0.font = .caption
+        $0.textColor = .textSubtitle
+        $0.textAlignment = .right
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
+        $0.setContentHuggingPriority(.required, for: .horizontal)
+    }
+
+    private let bar = UIProgressView(progressViewStyle: .default)
+
+    init(change: QueueChange) {
+        super.init(frame: .zero)
+        let title = UIStackView(arrangedSubviews: [nameLabel, statusLabel])
+        title.spacing = 8
+        let stack = UIStackView(arrangedSubviews: [title, bar])
+        stack.axis = .vertical
+        stack.spacing = 4
+        addSubview(stack)
+        stack.snp.makeConstraints { $0.edges.equalToSuperview() }
+        nameLabel.text = change.name
+        bar.progressTintColor = change.kind == .remove ? .swipeDelete : .buttonNormal
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError()
+    }
+
+    func set(status: String, fraction: Float, color: UIColor? = nil) {
+        statusLabel.text = status
+        bar.moveProgress(to: min(max(fraction, 0), 1))
+        if let color { bar.progressTintColor = color }
+    }
+}
+
 /// An install, update or removal asked for anywhere in the app, done in a
 /// popup centered over the page: the files download with a bar, then the
 /// transaction runs with a bar of its own, then the button says Done. A
@@ -97,6 +140,19 @@ final class QuickInstallController: UIViewController {
 
     private var plan: ResolutionPlan
     private let packageName: String
+    private let requested: Set<String>
+    private var rows: [String: PackageProgressRow] = [:]
+    private var changes: [String: QueueChange] = [:]
+    private let rowsStack = UIStackView().then {
+        $0.axis = .vertical
+        $0.spacing = 12
+    }
+
+    private let rowsScroll = UIScrollView().then {
+        $0.showsVerticalScrollIndicator = true
+        $0.isHidden = true
+    }
+
     private var phase = Phase.downloading
     private var work: Task<Void, Never>?
     private var monitor: OperationMonitor?
@@ -141,8 +197,9 @@ final class QuickInstallController: UIViewController {
         $0.layer.cornerCurve = .continuous
     }
 
-    private init(plan: ResolutionPlan, packageName: String, notices: [String]) {
+    private init(plan: ResolutionPlan, packageName: String, requested: Set<String>, notices: [String]) {
         self.plan = plan
+        self.requested = requested
         self.packageName = packageName
         super.init(nibName: nil, bundle: nil)
         noticesLabel.text = notices.joined(separator: "\n")
@@ -206,6 +263,7 @@ final class QuickInstallController: UIViewController {
         let controller = QuickInstallController(
             plan: plan,
             packageName: PackageCenter.default.name(of: package),
+            requested: Set(actions.map(\.identity)),
             notices: proposal.notices
         )
         host.present(controller, animated: true)
@@ -219,7 +277,7 @@ final class QuickInstallController: UIViewController {
         view.backgroundColor = .popupScrim
         nameLabel.text = packageName
         let stack = UIStackView(arrangedSubviews: [
-            nameLabel, statusLabel, noticesLabel, progressIndicator, primaryButton, logButton,
+            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, primaryButton, logButton,
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -234,6 +292,16 @@ final class QuickInstallController: UIViewController {
         }
         stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
         primaryButton.snp.makeConstraints { $0.height.equalTo(48) }
+        rowsScroll.addSubview(rowsStack)
+        rowsStack.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+            $0.width.equalToSuperview()
+        }
+        let natural = rowsScroll.heightAnchor.constraint(equalTo: rowsStack.heightAnchor)
+        natural.priority = .defaultHigh
+        natural.isActive = true
+        rowsScroll.heightAnchor.constraint(lessThanOrEqualToConstant: 240).isActive = true
+        rebuildRows()
         apply(plan.install.contains { $0.localFileURL == nil } ? .downloading : .preparing)
         work = Task { [weak self] in await self?.run() }
     }
@@ -257,6 +325,7 @@ final class QuickInstallController: UIViewController {
                 return apply(.failed(PackageQueue.shared.blocked ?? String(localized: "Unable to prepare this operation. Try again.")))
             }
             plan = current
+            rebuildRows()
             let pending = current.install.filter { $0.localFileURL == nil }
             if !pending.isEmpty {
                 apply(.downloading)
@@ -284,6 +353,7 @@ final class QuickInstallController: UIViewController {
             return apply(.failed(String(localized: "Unable to prepare this operation. Try again.")))
         }
         self.plan = plan
+        rebuildRows()
         apply(.preparing)
         var bootstrapInstall = false
         if !QueueInstallChecks.hasDpkg(plan) {
@@ -317,6 +387,10 @@ final class QuickInstallController: UIViewController {
         let monitor = Installer.shared.beginOperation(operation: payload)
         self.monitor = monitor
         apply(.installing)
+        monitor.$packages
+            .throttle(for: .milliseconds(100), scheduler: DispatchQueue.main, latest: true)
+            .sink { [weak self] packages in self?.showInstallProgress(packages) }
+            .store(in: &subscriptions)
         monitor.$progress
             .compactMap(\.self)
             .throttle(for: .milliseconds(100), scheduler: DispatchQueue.main, latest: true)
@@ -340,6 +414,55 @@ final class QuickInstallController: UIViewController {
         let done = statuses.reduce(Int64(0)) { $0 + ($1.file != nil ? max($1.completedBytes, $1.totalBytes) : $1.completedBytes) }
         let fraction = total > 0 ? Float(min(Double(done) / Double(total), 1)) : 0
         progressIndicator.setProgress(fraction, animated: true)
+        for package in plan.install {
+            guard let row = rows[package.identity] else { continue }
+            let status = Downloads.shared.status(for: package.obtainDownloadLink())
+            if package.localFileURL != nil || status?.file != nil {
+                row.set(status: String(localized: "Downloaded"), fraction: 1)
+            } else if let status, status.totalBytes > 0 {
+                row.set(
+                    status: String(localized: "Downloading…"),
+                    fraction: Float(min(Double(status.completedBytes) / Double(status.totalBytes), 1))
+                )
+            } else {
+                row.set(status: String(localized: "Waiting"), fraction: 0)
+            }
+        }
+    }
+
+    private func rebuildRows() {
+        let next = QueueChange.changes(of: plan, requested: requested)
+        guard Set(next.keys) != Set(changes.keys) else { return }
+        changes = next
+        rows.values.forEach { $0.removeFromSuperview() }
+        rows = [:]
+        let ordered = next.values.sorted {
+            $0.requested != $1.requested ? $0.requested : $0.name < $1.name
+        }
+        for change in ordered {
+            let row = PackageProgressRow(change: change)
+            rows[change.package.identity] = row
+            rowsStack.addArrangedSubview(row)
+            row.set(status: String(localized: "Waiting"), fraction: 0)
+        }
+        rowsScroll.isHidden = rows.count < 2
+    }
+
+    private func showInstallProgress(_ packages: OperationPackages) {
+        for (identity, row) in rows {
+            guard let change = changes[identity], let state = packages.states[identity] else { continue }
+            let color: UIColor? = switch state.status {
+            case .failed: .operationFailed
+            case .incomplete: .operationWarning
+            case .done: .operationSucceeded
+            default: change.kind == .remove ? .swipeDelete : .buttonNormal
+            }
+            row.set(
+                status: OperationPackageCell.subtitle(of: state, change: change),
+                fraction: Float(state.fraction),
+                color: color
+            )
+        }
     }
 
     // MARK: - Presentation

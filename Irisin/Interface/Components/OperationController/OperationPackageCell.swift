@@ -84,7 +84,7 @@ final class OperationPackageCell: UITableViewCell {
     }
 
     /// What the package is doing, or how it ended.
-    private static func subtitle(of state: OperationPackages.State, change: QueueChange) -> String {
+    static func subtitle(of state: OperationPackages.State, change: QueueChange) -> String {
         switch state.status {
         case .waiting:
             return state.nextStep == .configuring ? String(localized: "Waiting to be set up") : String(localized: "Waiting")
