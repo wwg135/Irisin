@@ -22,15 +22,17 @@ else
 fi
 
 error_pattern='(^|[[:space:]])error:|^\*\* (BUILD|TEST|ARCHIVE|CLEAN|ANALYZE) FAILED \*\*|^Testing failed:|^Failing tests:'
+# the build cache's own notice about a missing git lock is not a build error
+ignored_pattern='skipping cache due to an error:'
 errors_in_log=0
-if grep -En "$error_pattern" "$log" >/dev/null 2>&1; then
+if grep -E "$error_pattern" "$log" | grep -Ev "$ignored_pattern" >/dev/null 2>&1; then
     errors_in_log=1
 fi
 
 if [[ "$xcode_status" -ne 0 || "$errors_in_log" -ne 0 ]]; then
     echo "error: [$label] xcodebuild failed (exit=$xcode_status, errors_in_log=$errors_in_log)" >&2
     if [[ "$errors_in_log" -ne 0 ]]; then
-        grep -En "$error_pattern" "$log" | head -40 >&2 || true
+        grep -En "$error_pattern" "$log" | grep -Ev "$ignored_pattern" | head -40 >&2 || true
     fi
     # A compiler killed by the system or a failing script phase reports no
     # "error:" line at all; the failed command and the raw tail are the only
