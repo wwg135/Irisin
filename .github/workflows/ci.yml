@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "DERIVED_DATA=$RUNNER_TEMP/irisin-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          echo "DERIVED_DATA=$RUNNER_TEMP/irisin-ci" >> "$GITHUB_ENV"
 
       - name: Check out repository
         uses: actions/checkout@v4
@@ -89,6 +89,18 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
           xcodebuild -version
           echo "iPhoneOS SDK $(xcrun --sdk iphoneos --show-sdk-version)"
+
+      - name: Restore Xcode build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/irisin-ci/Build/Intermediates.noindex
+            ${{ runner.temp }}/irisin-ci/Build/Products/Release-iphoneos
+            ${{ runner.temp }}/irisin-ci/Build/ModuleCache.noindex
+            ${{ runner.temp }}/irisin-ci/SourcePackages
+          key: irisin-${{ github.workflow }}-xcode-27.1-iphoneos-release-${{ hashFiles('**/Package.resolved') }}-${{ github.sha }}
+          restore-keys: |
+            irisin-${{ github.workflow }}-xcode-27.1-iphoneos-release-${{ hashFiles('**/Package.resolved') }}-
 
       - name: Install packaging dependencies
         shell: bash
