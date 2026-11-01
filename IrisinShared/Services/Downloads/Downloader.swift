@@ -230,7 +230,10 @@ nonisolated enum Downloader {
 }
 
 /// One transfer at a time per partial file.
-private actor PartialLock {
+/// On the main actor: a custom actor would import `swift_defaultActor_*`,
+/// which iOS 15 does not export.
+@MainActor
+private final class PartialLock {
     static let shared = PartialLock()
     private var held: Set<String> = []
     private var waiters: [String: [CheckedContinuation<Void, Never>]] = [:]
