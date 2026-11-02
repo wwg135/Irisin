@@ -495,9 +495,17 @@ final class QuickInstallController: UIViewController {
         logButton.isHidden = true
         cancelButton.isHidden = true
         primaryButton.isEnabled = true
+        // the question before the run is a note between the name and the
+        // buttons, a step smaller than the status that follows it
+        if case .confirming = next {
+            statusLabel.font = .caption
+        } else {
+            statusLabel.font = .body
+        }
         switch next {
         case .confirming:
-            statusLabel.isHidden = true
+            statusLabel.isHidden = false
+            statusLabel.text = String(localized: "Continue with this operation?")
             progressIndicator.isHidden = true
             cancelButton.isHidden = false
             configuration.title = String(localized: "Confirm")
