@@ -73,8 +73,10 @@ class RepositoriesController: UIViewController {
         return value.hasSuffix("/") ? String(value.dropLast()) : value
     }
 
+    /// Pinning belongs to Lightweight Mode; without it nothing is pinned.
     static func pinnedRepositoryUrls() -> [String] {
-        (UserDefaults.standard.array(forKey: Self.pinnedRepositoryKey) as? [String] ?? [])
+        guard QueueMode.isLightweight else { return [] }
+        return (UserDefaults.standard.array(forKey: Self.pinnedRepositoryKey) as? [String] ?? [])
             .map { $0.lowercased() }
     }
 
@@ -177,6 +179,10 @@ class RepositoriesController: UIViewController {
         NotificationCenter.default.publisher(for: RepositoryCenter.metadataUpdate)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.settleRefreshControl() }
+            .store(in: &subscriptions)
+        NotificationCenter.default.publisher(for: .QueueModeChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.reloadDataSource() }
             .store(in: &subscriptions)
     }
 

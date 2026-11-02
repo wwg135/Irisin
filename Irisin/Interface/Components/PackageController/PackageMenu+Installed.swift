@@ -11,10 +11,10 @@ import UIKit
 /// row and the bar of a selection. Both are the package menu's own actions,
 /// decided by the same eligibility and run by the same blocks.
 extension PackageMenu {
-    /// What a swipe offers, from the trailing edge in: an installed package
-    /// is removed, and updated or reinstalled when a repository has the
-    /// version for it.
-    static let swipeDescriptors: [Action] = [.remove, .update, .reinstall]
+    /// What a swipe offers, from the trailing edge in: a queued package
+    /// leaves the queue, an installed one is removed, and updated or
+    /// reinstalled when a repository has the version for it.
+    static let swipeDescriptors: [Action] = [.dequeue, .remove, .update, .reinstall]
 
     /// `eligible` narrowed to what a swipe offers, in the swipe's order.
     static func swipeOrder(of eligible: [Action]) -> [Action] {
@@ -33,8 +33,8 @@ extension PackageMenu {
     }
 
     /// The update of a dpkg row as a request, nil when the menu would not
-    /// offer Update: no newer version or a blocked update. A commercial
-    /// package is left out too: its download
+    /// offer Update: no newer version, a blocked update, a package already
+    /// in the queue. A commercial package is left out too: its download
     /// link is the vendor's answer to one purchase check, made on its own
     /// page. This is the batch path and it skips `keeps(_:from:)`: that
     /// alert talks about one package with its page one tap away, and a
@@ -50,10 +50,13 @@ extension PackageMenu {
     }
 
     /// What Remove on a selection asks for, and the rows it cannot speak
-    /// for. A row the menu offers Remove for is removed.
+    /// for. A row the menu offers Remove for is removed. A queued row
+    /// offers Remove from Queue and nothing else: alone it leaves the queue
+    /// as its swipe has it, and among others it is left out, since a
+    /// withdrawal is solved for one package.
     static func removal(
         ofInstalled rows: [Package]
-    ) -> (actions: [ResolutionAction], leftOut: [Package]) {
+    ) -> (request: QueueChangeController.Request?, leftOut: [Package]) {
         var removes: [ResolutionAction] = []
         var leftOut: [Package] = []
         for row in rows {
@@ -64,13 +67,22 @@ extension PackageMenu {
                 leftOut.append(row)
             }
         }
-        return (removes, leftOut)
+        if !removes.isEmpty {
+            return (.actions(removes), leftOut)
+        }
+        if rows.count == 1, let row = rows.first, PackageQueue.shared.isQueued(row.identity) {
+            return (.withdraw(row.identity), [])
+        }
+        return (nil, leftOut)
     }
 
     /// Whether `removal(ofInstalled:)` has a request for these rows, asked
     /// at every change of a selection: it stops at the first row that says
     /// yes, where the request itself reads every row.
     static func canRemove(anyOfInstalled rows: [Package]) -> Bool {
-        rows.contains { eligibleActions(for: requestPackage(for: $0)).contains { $0.descriptor == .remove } }
+        if rows.contains(where: { eligibleActions(for: requestPackage(for: $0)).contains { $0.descriptor == .remove } }) {
+            return true
+        }
+        return rows.count == 1 && PackageQueue.shared.isQueued(rows[0].identity)
     }
 }

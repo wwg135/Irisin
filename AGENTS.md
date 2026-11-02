@@ -217,9 +217,12 @@ transaction's journal on disk instead of a pipe: `Documentation/ExternalClients.
   string the resolver is handed: `resolveAdaptedPackageManifestPreview`
   answers with the control paragraph it expects to leave, from the
   catalogue's alone, and the resolver solves an adapted package as that
-  says before anything downloads. `PackageMenu.install` starts the centered
-  `QuickInstallController` popup for installs, updates and removals; there
-  is no native queue page, tab or floating queue bar. The popup downloads,
+  says before anything downloads. `PackageMenu.install` follows
+  `QueueMode.isLightweight` (Settings → Downloads → Lightweight Mode, off by
+  default). Off: the native queue (queue page, tab, bottom bar,
+  `QueueChangeController`) and no pinned repositories. On: the centered
+  `QuickInstallController` popup for installs, updates and removals, and
+  repository pinning; turning it on clears an idle queue. The popup downloads,
   adapts each package once through `PackageQueue.patch`, solves again with
   the control paragraphs `adapt` wrote, and stages the resulting plan as-is.
   The plan solved with is the one installed. A system with no `dpkg` still

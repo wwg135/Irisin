@@ -141,6 +141,17 @@ extension SettingsController {
     func downloadItems() -> [SettingsItem] {
         [
             SettingsItem(
+                id: "package.lightweightMode",
+                icon: "bolt",
+                title: String(localized: "Lightweight Mode"),
+                kind: .toggle,
+                isOn: { QueueMode.isLightweight },
+                setOn: { [weak self] isOn in
+                    QueueMode.isLightweight = isOn
+                    self?.dispatchValueUpdate()
+                }
+            ),
+            SettingsItem(
                 id: "package.downloads",
                 icon: "tray.full",
                 title: String(localized: "Downloads Folder"),

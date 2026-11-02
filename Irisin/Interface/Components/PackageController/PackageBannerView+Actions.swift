@@ -22,7 +22,8 @@ extension PackageBannerView {
         ])
     }
 
-    /// A tap runs the quick action; a long press opens the menu. A package built for
+    /// A tap queues the quick action, or opens the queue the package is
+    /// already in; a long press opens the menu. A package built for
     /// another bootstrap only explains itself. The title
     /// dims the moment the tap lands and comes back once the action has run.
     @objc
@@ -33,7 +34,12 @@ extension PackageBannerView {
             PackageMenu.presentUnsupportedArchitecture(of: package, from: host)
             return
         }
-        guard let action = obtainQuickAction() else { return }
+        guard let action = obtainQuickAction() else {
+            if opensQueue {
+                InterfaceHostController.enclosing(host)?.openQueue()
+            }
+            return
+        }
         button.titleLabel?.alpha = 0.5
         Task {
             await action.block(package, host, PopoverAnchor(button))
@@ -41,11 +47,22 @@ extension PackageBannerView {
         }
     }
 
+    /// The package is queued as it is: the tap goes to the queue, and the
+    /// menu, with Remove from Queue, is a long press away.
+    var opensQueue: Bool {
+        PackageQueue.shared.isQueued(package.identity) && obtainQuickAction() == nil
+    }
+
     /// What a tap does: the first eligible action for a file or a package
     /// that is not installed, Update for one that is and has a newer
-    /// version. nil when the tap opens the menu instead.
+    /// version, Replace for a different queued package record. nil
+    /// when the tap opens the menu instead, or the queue for a package
+    /// queued as it is (`opensQueue`).
     func obtainQuickAction() -> PackageMenu.Item? {
         let actions = PackageMenu.eligibleActions(for: package)
+        guard !PackageQueue.shared.isQueued(package.identity) else {
+            return actions.first { $0.descriptor == .replace }
+        }
         guard package.localFileURL == nil,
               PackageCenter.default.obtainPackageInstallationInfo(with: package.identity) != nil
         else { return actions.first }

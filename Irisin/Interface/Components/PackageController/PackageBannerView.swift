@@ -7,6 +7,7 @@
 //
 
 import AptRepository
+import Combine
 import Then
 import UIKit
 
@@ -47,6 +48,8 @@ class PackageBannerView: UIView {
         $0.backgroundColor = .buttonNormal
         $0.layer.cornerRadius = 17
     }
+
+    private var queueSubscription: AnyCancellable?
 
     init(package: Package) {
         self.package = PackageMenu.requestPackage(for: package)
@@ -107,6 +110,10 @@ class PackageBannerView: UIView {
         }
 
         updateValues()
+        // Open Queue follows the queue, whichever page changed it
+        queueSubscription = NotificationCenter.default.publisher(for: .PackageQueueChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateButton() }
     }
 
     @available(*, unavailable)
@@ -154,8 +161,10 @@ class PackageBannerView: UIView {
     func updateButton() {
         button.setTitle(grabButtonString(), for: .normal)
         // with nothing to install or update, the tap opens the menu itself;
-        // an unsupported package keeps its tap for the explanation
+        // a queued package keeps its tap for the queue, an unsupported one
+        // for the explanation
         button.showsMenuAsPrimaryAction = obtainQuickAction() == nil
+            && !opensQueue
             && (package.isSupportedOnDevice || package.localFileURL != nil)
 
         // now we need to update button size from localized string
@@ -180,6 +189,9 @@ class PackageBannerView: UIView {
     func grabButtonString() -> String {
         if !package.isSupportedOnDevice, package.localFileURL == nil {
             return String(localized: "Unsupported").uppercased()
+        }
+        if PackageQueue.shared.isQueued(package.identity) {
+            return (obtainQuickAction()?.descriptor.describe() ?? String(localized: "Open Queue")).uppercased()
         }
         if PackageCenter
             .default

@@ -78,6 +78,7 @@ extension RepositoriesController: UITableViewDelegate {
     ) -> UISwipeActionsConfiguration? {
         guard let url = url(at: index) else { return nil }
         // Pin / Unpin action on right-swipe (leading)
+        guard QueueMode.isLightweight else { return shareOnlyConfiguration(for: url, at: index, in: tableView) }
         let isPinned = RepositoriesController.isPinned(url)
         let pinTitle = isPinned ? String(localized: "Unpin") : String(localized: "Pin")
         let pinItem = UIContextualAction(
@@ -106,6 +107,7 @@ extension RepositoriesController: UITableViewDelegate {
     // MARK: - Header views for clearer card groups
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard QueueMode.isLightweight else { return nil }
         let snapshot = diffableDataSource.snapshot()
         let count = snapshot.numberOfItems(inSection: section)
         // For section 0, also ensure the persistent pinned list is non-empty
@@ -139,11 +141,28 @@ extension RepositoriesController: UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        guard QueueMode.isLightweight else { return 0.1 }
         let snapshot = diffableDataSource.snapshot()
         let count = snapshot.numberOfItems(inSection: section)
         if section == 0 {
             return (!Self.pinnedRepositoryUrls().isEmpty && count > 0) ? 36 : 0.1
         }
         return count > 0 ? 36 : 0.1
+    }
+
+    private func shareOnlyConfiguration(
+        for url: URL,
+        at index: IndexPath,
+        in tableView: UITableView
+    ) -> UISwipeActionsConfiguration {
+        let shareItem = UIContextualAction(
+            style: .normal,
+            title: String(localized: "Share")
+        ) { [weak self] _, _, completion in
+            completion(true)
+            self?.share(url, from: tableView.cellForRow(at: index))
+        }
+        shareItem.backgroundColor = .swipeShare
+        return UISwipeActionsConfiguration(actions: [shareItem])
     }
 }

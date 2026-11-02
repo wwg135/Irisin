@@ -161,6 +161,75 @@ final class PackageQueue {
         return true
     }
 
+    /// The queue touches the package: asked for, ticked, or brought in.
+    func isQueued(_ identity: String) -> Bool {
+        actions.contains { $0.identity == identity }
+            || cleanup.contains(identity)
+            || plan.map { ($0.install + $0.remove).contains { $0.identity == identity } } ?? false
+    }
+
+    /// The package the queue installs, including its source file.
+    func queuedPackage(of identity: String) -> Package? {
+        plan?.install.first { $0.identity == identity }
+    }
+
+    /// Whether Update All leaves the package as the queue has it: the
+    /// queue asks for it already, a request Update All keeps, or installs
+    /// `version` of it or a newer one.
+    func coversUpdate(of identity: String, to version: String) -> Bool {
+        actions.contains { $0.identity == identity }
+            || queuedPackage(of: identity)?.latestVersion.map { DebianVersion.compare($0, version) >= 0 } == true
+    }
+
+    /// Solves the queue without the package: its own request or tick, or
+    /// the requests that bring it in. `cleanup` replaces the ticked set.
+    func proposeWithdrawal(
+        of identity: String,
+        cleanup: Set<String>? = nil
+    ) async -> Result<Proposal, ResolutionFailure> {
+        let dropped = await requests(bringing: identity)
+        return await proposal(
+            actions: actions.filter { !dropped.contains($0.identity) },
+            cleanup: (cleanup ?? self.cleanup).subtracting([identity]),
+            notices: []
+        )
+    }
+
+    /// The queued requests the package is in the plan for.
+    private func requests(bringing identity: String) async -> Set<String> {
+        let queued = Set(actions.map(\.identity))
+        guard !queued.contains(identity), let plan else { return [identity] }
+        if plan.install.contains(where: { $0.identity == identity }) {
+            // up the dependency edges to the requests that need it
+            var found: Set<String> = []
+            var visited: Set<String> = []
+            var pending = [identity]
+            while let name = pending.popLast() {
+                for dependent in plan.requiredBy[name] ?? [] where visited.insert(dependent).inserted {
+                    if queued.contains(dependent) {
+                        found.insert(dependent)
+                    } else {
+                        pending.append(dependent)
+                    }
+                }
+            }
+            return found
+        }
+        // ponytail: the plan does not say why a package leaves, so each
+        // request is solved alone; a removal reason from the resolver
+        // replaces this if long queues make it slow
+        var found: Set<String> = []
+        for action in actions {
+            let alone = await proposal(actions: [action], cleanup: [], notices: [])
+            if case let .success(alone) = alone,
+               alone.plan?.remove.contains(where: { $0.identity == identity }) == true
+            {
+                found.insert(action.identity)
+            }
+        }
+        return found
+    }
+
     // MARK: - Patch
 
     /// A package Patch adapted: the prepared tree staging hands the helper,

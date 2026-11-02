@@ -17,6 +17,7 @@ struct InstalledRowActionTests {
         offered: String,
         installedFromRepository: Bool = true,
         tag: String? = nil,
+        alongside others: [Package] = [],
         _ body: (_ installed: Package, _ remote: Package) throws -> Void
     ) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -39,7 +40,11 @@ struct InstalledRowActionTests {
         metadata["tag"] = tag
         let remote = Package(identity: Self.identity, payload: [offered: metadata], repoRef: repository)
         db.replacePackages(of: repository, with: [remote.identity: remote])
-        db.replaceInstalled([installed.identity: installed], installedFrom: installedFromRepository ? [origin] : [])
+        var rows = [installed.identity: installed]
+        for other in others {
+            rows[other.identity] = other
+        }
+        db.replaceInstalled(rows, installedFrom: installedFromRepository ? [origin] : [])
         try body(installed, remote)
     }
 
@@ -48,6 +53,7 @@ struct InstalledRowActionTests {
         #expect(PackageMenu.swipeOrder(of: [.reinstall, .versionControl, .remove, .viewMeta])
             == [.remove, .reinstall])
         #expect(PackageMenu.swipeOrder(of: [.update, .remove, .blockUpdate]) == [.remove, .update])
+        #expect(PackageMenu.swipeOrder(of: [.dequeue, .replace, .versionControl]) == [.dequeue])
         #expect(PackageMenu.swipeOrder(of: [.install, .download]).isEmpty)
     }
 
@@ -80,11 +86,11 @@ struct InstalledRowActionTests {
 
             let removal = PackageMenu.removal(ofInstalled: [installed])
             #expect(removal.leftOut.isEmpty)
-            guard case let .remove(identity) = removal.actions.first else {
+            guard case let .actions(asked) = removal.request, case let .remove(identity) = asked.first else {
                 Issue.record("a selection of one installed row asks for its removal")
                 return
             }
-            #expect(removal.actions.count == 1)
+            #expect(asked.count == 1)
             #expect(identity == installed.identity)
         }
     }
@@ -133,4 +139,45 @@ struct InstalledRowActionTests {
         }
     }
 
+    /// A queued row leaves the queue and offers nothing else, by swipe and
+    /// alone in a selection; among other rows it is left out.
+    @Test
+    func aQueuedRowIsWithdrawn() throws {
+        let other = Package(identity: "test.installed-row.other", payload: ["1.0": [
+            "architecture": "all", "status": "install ok installed",
+        ]])
+        try withInstalledRow(offered: "2.0", alongside: [other]) { installed, _ in
+            let manager = PackageQueue.shared
+            try #require(manager.plan == nil && manager.actions.isEmpty)
+            defer { manager.clear() }
+            try #require(manager.commit(.init(
+                actions: [.remove(installed.identity)],
+                cleanup: [],
+                plan: nil,
+                notices: [],
+                revision: manager.revision
+            )))
+
+            let swipe = PackageMenu.swipeActions(forInstalled: installed).actions
+            #expect(swipe.map(\.descriptor) == [.dequeue])
+            #expect(PackageMenu.updateRequest(forInstalled: installed) == nil)
+
+            let alone = PackageMenu.removal(ofInstalled: [installed])
+            guard case let .withdraw(identity) = alone.request else {
+                Issue.record("a queued row selected alone leaves the queue")
+                return
+            }
+            #expect(identity == installed.identity)
+            #expect(alone.leftOut.isEmpty)
+
+            let both = PackageMenu.removal(ofInstalled: [installed, other])
+            guard case let .actions(asked) = both.request, case let .remove(removed) = asked.first else {
+                Issue.record("the row that is not queued is removed")
+                return
+            }
+            #expect(asked.count == 1)
+            #expect(removed == other.identity)
+            #expect(both.leftOut == [installed])
+        }
+    }
 }
