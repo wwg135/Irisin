@@ -21,10 +21,21 @@ extension UIViewController {
         fila(host: "reveal", path: path)
     }
 
-    /// The fila:// link from the README. Without Fila the sheet offers the
-    /// way to it: the OwnGoal Studio repository when it is not added yet,
-    /// the package once it is.
+    /// Filza's filza://view/<path> (it has no reveal, so it opens the path),
+    /// else the fila:// link from the README. With neither installed the
+    /// sheet says so and offers the way to Fila: the OwnGoal Studio
+    /// repository when it is not added yet, the package once it is. Filza
+    /// is not ours to point anywhere.
     private func fila(host: String, path: String) {
+        var filza = URLComponents()
+        filza.scheme = "filza"
+        filza.host = "view"
+        filza.path = path
+        if let url = filza.url, UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            return
+        }
+
         var components = URLComponents()
         components.scheme = "fila"
         components.host = host
@@ -37,8 +48,8 @@ extension UIViewController {
         let repository = RepositoryCenter.default.repositories.values
             .first { $0.url.host == Self.filaRepository.host }
         presentConfirmation(
-            title: "Install Fila",
-            message: "Fila opens folders and files on this device. It comes from the OwnGoal Studio repository.",
+            title: "Install Fila or Filza",
+            message: "Neither Fila nor Filza is installed. Fila opens folders and files on this device and comes from the OwnGoal Studio repository.",
             confirmTitle: repository == nil ? "Add Repository" : "Install Fila"
         ) { [weak self] in
             guard let repository else {

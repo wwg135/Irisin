@@ -112,6 +112,7 @@ class PackageBannerView: UIView {
         updateValues()
         // Open Queue follows the queue, whichever page changed it
         queueSubscription = NotificationCenter.default.publisher(for: .PackageQueueChanged)
+            .merge(with: NotificationCenter.default.publisher(for: .QueueModeChanged))
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateButton() }
     }
@@ -165,7 +166,7 @@ class PackageBannerView: UIView {
         // for the explanation
         button.showsMenuAsPrimaryAction = obtainQuickAction() == nil
             && !opensQueue
-            && package.isSupportedOnDevice
+            && (package.isSupportedOnDevice || package.localFileURL != nil)
 
         // now we need to update button size from localized string
         var width = button.intrinsicContentSize.width
@@ -187,10 +188,10 @@ class PackageBannerView: UIView {
     }
 
     func grabButtonString() -> String {
-        if !package.isSupportedOnDevice {
+        if !package.isSupportedOnDevice, package.localFileURL == nil {
             return String(localized: "Unsupported").uppercased()
         }
-        if PackageQueue.shared.isQueued(package.identity) {
+        if PackageQueue.shared.isShownQueued(package.identity) {
             return (obtainQuickAction()?.descriptor.describe() ?? String(localized: "Open Queue")).uppercased()
         }
         if PackageCenter

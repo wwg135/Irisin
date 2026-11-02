@@ -59,6 +59,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fila</string>
+		<string>filza</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>

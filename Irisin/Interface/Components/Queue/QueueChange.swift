@@ -10,8 +10,7 @@ import AptRepository
 import AptResolver
 import UIKit
 
-/// One package the queue's plan touches, as the change sheet and the queue
-/// page show it.
+/// One package in an operation plan, as the operation page displays it.
 nonisolated struct QueueChange: Hashable, Sendable {
     enum Kind: Int, Hashable, Sendable {
         /// the order a diff sorts in: what goes, what comes, what moves

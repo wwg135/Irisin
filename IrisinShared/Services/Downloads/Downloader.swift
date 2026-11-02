@@ -25,6 +25,8 @@ nonisolated enum DownloadError: LocalizedError, Equatable {
     /// More bytes than the server announced. Something between us and the
     /// file is broken; a file that "finished" like this is not the file.
     case overrun(expected: Int64, received: Int64)
+    /// The partial file on disk is not a prefix of the file the server has.
+    case rangeNotSatisfiable
 
     var errorDescription: String? {
         String(localized: "Download failed. Try again.")
@@ -64,7 +66,12 @@ nonisolated enum Downloader {
         return AsyncThrowingStream { continuation in
             let work = Task {
                 do {
-                    try await run(url: url, headers: headers, session: session, into: continuation)
+                    do {
+                        try await run(url: url, headers: headers, session: session, into: continuation)
+                    } catch DownloadError.rangeNotSatisfiable {
+                        // run has dropped the partial file; start from the top
+                        try await run(url: url, headers: headers, session: session, into: continuation)
+                    }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -81,6 +88,11 @@ nonisolated enum Downloader {
         into continuation: AsyncThrowingStream<DownloadEvent, any Error>.Continuation
     ) async throws {
         let partial = PartialDownloads.file(for: url)
+        // A cancelled transfer of this URL may still be closing its file;
+        // wait for it so two never write the same partial file.
+        await PartialLock.shared.acquire(partial.path)
+        defer { Task { await PartialLock.shared.release(partial.path) } }
+        try Task.checkCancellation()
         var request = URLRequest(url: url)
         // HTTP/3 packets can outgrow the reduced MTU inside a VPN tunnel and
         // abort a large download with -1005. TCP has no such trouble.
@@ -182,6 +194,8 @@ nonisolated enum Downloader {
     /// bytes were already on disk when the request went out.
     static func plan(for response: HTTPURLResponse, having onDisk: Int64) throws -> Plan {
         guard (200 ..< 300).contains(response.statusCode) else {
+            // The partial file is already as long as the file: nothing to ask for.
+            if response.statusCode == 416 { throw DownloadError.rangeNotSatisfiable }
             throw DownloadError.badStatus(response.statusCode)
         }
         let acceptsRanges = response.value(forHTTPHeaderField: "Accept-Ranges")?.lowercased() == "bytes"
@@ -212,5 +226,29 @@ nonisolated enum Downloader {
               start >= 0, total >= 0
         else { return nil }
         return (start, total)
+    }
+}
+
+/// One transfer at a time per partial file.
+/// On the main actor: a custom actor would import `swift_defaultActor_*`,
+/// which iOS 15 does not export.
+@MainActor
+private final class PartialLock {
+    static let shared = PartialLock()
+    private var held: Set<String> = []
+    private var waiters: [String: [CheckedContinuation<Void, Never>]] = [:]
+
+    func acquire(_ key: String) async {
+        if held.insert(key).inserted { return }
+        await withCheckedContinuation { waiters[key, default: []].append($0) }
+    }
+
+    func release(_ key: String) {
+        if var queue = waiters[key], !queue.isEmpty {
+            queue.removeFirst().resume()
+            waiters[key] = queue.isEmpty ? nil : queue
+        } else {
+            held.remove(key)
+        }
     }
 }

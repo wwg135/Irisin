@@ -1,6 +1,7 @@
 import AptRepository
 import Darwin
 import Foundation
+import IrisinAdapter
 import IrisinProtocol
 
 /// Where this run finds everything, decided once at the start of a command:
@@ -116,12 +117,17 @@ struct Context {
     /// is root's own workspace when `--repository` builds a catalogue there.
     func bootstrapEnvironment(verbose: Bool, workingLocation: URL? = nil) {
         let architecture = architecture
+        let installable = PackageAdapters.installed.installable(on: architecture)
         AptEnvironment.bootstrap(AptEnvironment(
             workingLocation: workingLocation ?? FileManager.default.temporaryDirectory.appendingPathComponent("irisin-cli-unused"),
             dpkgStatusLocation: statusFile,
             aptExtendedStatesLocation: path("/var/lib/apt/extended_states"),
             deviceArchitecture: { architecture },
+            installableArchitectures: { installable },
             indexFallbacks: { BootstrapArchitecture.probeOrder.map(\.rawValue) },
+            adaptedManifestPreview: {
+                PackageAdapters.installed.resolveAdaptedPackageManifestPreview(control: $0, on: architecture)
+            },
             storage: ReadOnlySettings(folder: data.appendingPathComponent("Settings", isDirectory: true)),
             logger: StandardErrorLogger(verbose: verbose)
         ))

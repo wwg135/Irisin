@@ -6,8 +6,9 @@ import Testing
 
 /// Paragraphs whose relations dpkg refuses, as two repositories publish
 /// them (trimmed): `apt.cydiabc.top` ends a Depends with a comma, and
-/// `zlw555.github.io/repo` names `mobile substrate`, two words. Every
-/// install on a device that read all three listed them under its plan.
+/// `zlw555.github.io/repo` names `mobile substrate`, two words. A roothide
+/// device read the first two through the rootless adapter, the third as
+/// its own, and every install on it listed all three under its plan.
 struct UnreadableEntryTests {
     private static let index = """
     Package: com.cydiabc.wchidechatavatars-rootless
@@ -15,7 +16,7 @@ struct UnreadableEntryTests {
     Section: 微信
     Maintainer: Nets
     Depends: mobilesubstrate,
-    Architecture: iphoneos-arm64e
+    Architecture: iphoneos-arm64
     Filename: ./debs/11522.deb
     Name: WCHideChatAvatars微信聊天隐藏头像-Rootless
 
@@ -24,7 +25,7 @@ struct UnreadableEntryTests {
     Section: 微信
     Maintainer: Nets
     Depends: mobilesubstrate,
-    Architecture: iphoneos-arm64e
+    Architecture: iphoneos-arm64
     Filename: ./debs/11566.deb
     Name: WCTimeLineMessageTail微信小尾巴-Rootless
 
@@ -64,7 +65,8 @@ struct UnreadableEntryTests {
         let snapshot = ResolutionSnapshot(
             packages: Self.broken + packages,
             installed: installed,
-            architecture: Self.roothide
+            architecture: Self.roothide,
+            installableArchitectures: [Self.roothide, "iphoneos-arm64"]
         )
         return try resolveBothWays(request: .init(actions: actions, updateAll: update), snapshot: snapshot)
     }
@@ -99,12 +101,12 @@ struct UnreadableEntryTests {
     }
 
     @Test func askingForOneByNameNamesWhatIsWrong() throws {
-        let wanted = try #require(Self.broken.first { $0.identity == "wxipad" })
+        let wanted = try #require(Self.broken.first { $0.identity == "com.cydiabc.wchidechatavatars-rootless" })
         do {
             _ = try solve([], actions: [.install(wanted)])
             Issue.record("A package whose relations do not parse installs nothing")
         } catch let failure as ResolutionFailure {
-            #expect(failure.reason == .unreadableMetadata(package: wanted.identity, version: "1.1.4"))
+            #expect(failure.reason == .unreadableMetadata(package: wanted.identity, version: "1.1-1"))
         }
     }
 }

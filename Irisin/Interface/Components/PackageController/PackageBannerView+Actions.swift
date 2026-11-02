@@ -30,7 +30,7 @@ extension PackageBannerView {
     func performQuickAction() {
         // the page, taken now: the banner may leave it while the action runs
         guard let host = parentViewController else { return }
-        guard package.isSupportedOnDevice else {
+        guard package.isSupportedOnDevice || package.localFileURL != nil else {
             PackageMenu.presentUnsupportedArchitecture(of: package, from: host)
             return
         }
@@ -50,7 +50,7 @@ extension PackageBannerView {
     /// The package is queued as it is: the tap goes to the queue, and the
     /// menu, with Remove from Queue, is a long press away.
     var opensQueue: Bool {
-        PackageQueue.shared.isQueued(package.identity) && obtainQuickAction() == nil
+        PackageQueue.shared.isShownQueued(package.identity) && obtainQuickAction() == nil
     }
 
     /// What a tap does: the first eligible action for a file or a package
@@ -60,7 +60,7 @@ extension PackageBannerView {
     /// queued as it is (`opensQueue`).
     func obtainQuickAction() -> PackageMenu.Item? {
         let actions = PackageMenu.eligibleActions(for: package)
-        guard !PackageQueue.shared.isQueued(package.identity) else {
+        guard !PackageQueue.shared.isShownQueued(package.identity) else {
             return actions.first { $0.descriptor == .replace }
         }
         guard package.localFileURL == nil,

@@ -69,6 +69,20 @@ public final class PackageCenter {
         }
     }
 
+    /// updates an adapter would have to rewrite, off until the user asks
+    private let offersAdaptedUpdatesStore = AptSetting<Bool>(
+        key: UpdatePreferenceKey.offersAdaptedUpdates,
+        defaultValue: false
+    )
+    public var offersAdaptedUpdates: Bool {
+        get { index.offersAdaptedUpdates }
+        set {
+            index.offersAdaptedUpdates = newValue
+            offersAdaptedUpdatesStore.wrappedValue = newValue
+            dispatchNotification()
+        }
+    }
+
     // MARK: - NOTIFICATIONS
 
     public nonisolated static let packageRecordChanged = Notification.Name(
@@ -101,6 +115,7 @@ public final class PackageCenter {
     /// run calls it first, so no count includes a blocked package.
     public func restoreUpdatePreferences() {
         index.blockedUpdateTable = blockedUpdateStore.wrappedValue
+        index.offersAdaptedUpdates = offersAdaptedUpdatesStore.wrappedValue
     }
 }
 
@@ -109,4 +124,5 @@ public final class PackageCenter {
 /// process that reads the same storage without one.
 enum UpdatePreferenceKey {
     static let blockedUpdates = "\(kPackageCenterIdentity).blockedUpdateTable"
+    static let offersAdaptedUpdates = "\(kPackageCenterIdentity).offersAdaptedUpdates"
 }

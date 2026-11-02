@@ -68,6 +68,7 @@ final class QueueBarDock {
         bar.heightChanged = { [weak self] in self?.makeRoom() }
 
         NotificationCenter.default.publisher(for: .PackageQueueChanged)
+            .merge(with: NotificationCenter.default.publisher(for: .QueueModeChanged))
             .receive(on: DispatchQueue.main)
             .map { _ in QueueController.queuedCount }
             .removeDuplicates()

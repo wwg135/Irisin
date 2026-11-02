@@ -102,13 +102,13 @@ rarely, and an Apple TV holds little of anyone's data.
 ## The run without a view controller
 
 The run from a proposal to its end lives in the app's interface
-(`QueueController`, `OperationController+Completion`), but every step of it
-is a service: `PackageQueue` proposes and commits, `Downloads` fetches,
+(`QuickInstallController`, `OperationController+Completion`), but every step
+of it is a service: `PackageQueue` proposes and commits, `Downloads` fetches,
 `Installer` stages and begins, `OperationMonitor` follows. `WebRun`
 composes the same services for a browser's plan, without moving the app's
 pages: the owner's yes, the downloads (`Downloads.awaitFiles`, which the
-queue page waits on too), on a system with no dpkg Bootstrap Install where
-the plan allows it or else the owner hears which packages run scripts
+popup waits on too), on a system with no dpkg Bootstrap Install where the
+plan allows it or else the owner hears which packages run scripts
 (`QueueInstallChecks`), staging, the run, and the end: an update of Irisin
 registers it and leaves (`OwnRegistration.request`), and changed tweaks
 say the home screen should reload. The app showing an operation the web

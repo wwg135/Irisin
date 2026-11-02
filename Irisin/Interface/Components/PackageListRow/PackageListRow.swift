@@ -307,7 +307,7 @@ class PackageListRow: UIView {
     /// in the corner: an arrow into the queue for an install, a cross for a
     /// removal. Nothing when the queue leaves it.
     static func drawQueueBadge(on indicator: UIImageView, for package: Package) {
-        guard let plan = PackageQueue.shared.plan else { return }
+        guard !QueueMode.isLightweight, let plan = PackageQueue.shared.plan else { return }
         // a reinstall or an update is in both lists, and it is an install
         if plan.install.contains(where: { $0.identity == package.identity }) {
             indicator.tintColor = .queuedInstall
@@ -326,15 +326,15 @@ class PackageListRow: UIView {
     /// that cannot be compared, on a backing that says it is installed at
     /// all. Every list that draws a package draws it so, the search's too.
     static func drawBadge(on indicator: UIImageView, for package: Package, installedVersion: String?) {
-        // a build this bootstrap cannot install is neither an update nor
-        // the installed version: no badge
+        // a build this bootstrap cannot install, even through an adapter,
+        // is neither an update nor the installed version: no badge
         guard package.isSupportedOnDevice, let installedVersion else { return }
         indicator.backgroundColor = .versionBadgeBacking
         // against the versions that may be an update, as the Updates
         // page judges them
         guard let version = package.version(
             comparedWith: installedVersion,
-            device: AptEnvironment.current.deviceArchitecture
+            accepted: PackageCenter.default.index.updateArchitectures
         ) else { return }
         switch Package.compareVersion(version, b: installedVersion) {
         case .aIsBiggerThenB:

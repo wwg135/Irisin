@@ -29,6 +29,18 @@
 	</dict>
 	<dict>
 		<key>source</key>
+		<string>https://havoc.app</string>
+	</dict>
+	<dict>
+		<key>source</key>
+		<string>https://repo.chariz.com</string>
+	</dict>
+	<dict>
+		<key>source</key>
+		<string>deb http://apt.thebigboss.org/repofiles/cydia stable main</string>
+	</dict>
+	<dict>
+		<key>source</key>
 		<string>https://apt.owngoal.dev</string>
 	</dict>
 </array>

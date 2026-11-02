@@ -18,8 +18,8 @@ extension ResolutionCheck {
     var detailText: String {
         var lines = [statusText]
         if outcome == .incompatibleArchitecture {
-            let device = AptEnvironment.current.deviceArchitecture
-            lines.append(String(localized: "This device supports \(device)."))
+            let accepted = AptEnvironment.current.installableArchitectures.sorted().joined(separator: ", ")
+            lines.append(String(localized: "This device supports \(accepted)."))
         }
         return (lines + candidates).joined(separator: "\n")
     }

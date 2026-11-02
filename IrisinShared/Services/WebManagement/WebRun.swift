@@ -11,7 +11,7 @@ import IrisinProtocol
 import IrisinWeb
 
 /// The changes a browser asks for, each put to the owner on the device and
-/// then carried out: a plan run through the same services the queue page
+/// then carried out: a plan run through the same services as the app popup
 /// uses, a repository added or removed, a respring. The request answers at
 /// once and the page polls it (`WebRequests`); one change at a time.
 enum WebRun {
@@ -111,7 +111,7 @@ enum WebRun {
         guard PackageQueue.shared.plan?.id == plan.id else { return stop(moved) }
 
         // A system with no dpkg: Bootstrap Install where the plan allows it,
-        // which places every file before any script runs, as the queue page
+        // which places every file before any script runs, as the app popup
         // offers first; otherwise the owner hears which packages run scripts.
         var bootstrapInstall = false
         if !QueueInstallChecks.hasDpkg(plan) {

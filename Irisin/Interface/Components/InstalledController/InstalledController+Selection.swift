@@ -108,7 +108,13 @@ extension InstalledController {
         }
         guard let request else { return }
         setEditing(false, animated: true)
-        Task { await QueueChangeController.show(request, from: self) }
+        Task {
+            if QueueMode.isLightweight, case let .actions(actions) = request {
+                await PackageMenu.install(actions, from: self)
+            } else {
+                await QueueChangeController.show(request, from: self)
+            }
+        }
     }
 
     // MARK: - TWO-FINGER SELECTION

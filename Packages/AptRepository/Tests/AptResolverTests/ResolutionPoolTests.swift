@@ -19,12 +19,16 @@ struct ResolutionPoolTests {
         revision: Int64 = 1,
         database: UUID? = nil,
         architecture: String = "arm64",
-        origins: [String: URL] = [:]
+        installable: Set<String> = ["arm64"],
+        origins: [String: URL] = [:],
+        preview: ResolutionSnapshot.ManifestPreview? = nil
     ) -> ResolutionSnapshot {
         ResolutionSnapshot(
             packages: packages,
             installed: installed,
             architecture: architecture,
+            installableArchitectures: installable,
+            adaptedManifestPreview: preview,
             origins: origins,
             catalogueRevision: revision,
             catalogueIdentity: database ?? self.database
@@ -87,12 +91,27 @@ struct ResolutionPoolTests {
         #expect(try versions(PackageResolver.resolve(request: update, snapshot: moved, pool: pool)).isEmpty)
     }
 
-    @Test func anotherArchitectureIsReadAgain() throws {
+    /// Patch wrote the control paragraph a package is solved with from then on.
+    @Test func adaptedParagraphsThatMovedAreReadAgain() throws {
+        let tweak = pkg("tweak", "1", ["architecture": "other"])
+        let preview: ResolutionSnapshot.ManifestPreview = { fields in
+            fields.merging(["pre-depends": "compat"]) { $1 }
+        }
+        var read = snapshot([tweak, pkg("compat")], installable: ["arm64", "other"], preview: preview)
+        let pool = try ResolutionPool(snapshot: read)
+        let request = ResolutionRequest(actions: [.install(tweak)])
+        #expect(try versions(PackageResolver.resolve(request: request, snapshot: read, pool: pool)).keys.sorted() == ["compat", "tweak"])
+        read.adaptedManifests = [tweak: tweak.latestMetadata ?? [:]]
+        #expect(!pool.serves(read))
+        #expect(try versions(PackageResolver.resolve(request: request, snapshot: read, pool: pool)).keys.sorted() == ["tweak"])
+    }
+
+    @Test func otherArchitecturesAreReadAgain() throws {
         let tweak = pkg("tweak", "1", ["architecture": "other"])
         let pool = try ResolutionPool(snapshot: snapshot([tweak]))
-        let other = snapshot([tweak], architecture: "other")
-        #expect(!pool.serves(other))
-        let plan = try PackageResolver.resolve(request: .init(actions: [.install(tweak)]), snapshot: other, pool: pool)
+        let adapting = snapshot([tweak], installable: ["arm64", "other"])
+        #expect(!pool.serves(adapting))
+        let plan = try PackageResolver.resolve(request: .init(actions: [.install(tweak)]), snapshot: adapting, pool: pool)
         #expect(versions(plan) == ["tweak": "1"])
     }
 

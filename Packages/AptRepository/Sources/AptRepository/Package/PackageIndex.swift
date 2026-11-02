@@ -25,6 +25,10 @@ public struct PackageIndex: Sendable {
     /// identities the user asked never to be offered an update for
     public internal(set) var blockedUpdateTable: [String] = []
 
+    /// whether a newer version an adapter would have to rewrite counts as
+    /// an update; off, a converted package stays at the version it has
+    public internal(set) var offersAdaptedUpdates = false
+
     // MARK: - QUERIES
 
     /// grab every package identity, useful for search
@@ -164,10 +168,11 @@ public struct PackageIndex: Sendable {
     /// identity with no origin (another package manager installed it, or
     /// dpkg by hand) has no repository to keep to, so every repository's
     /// newer version is on offer, as apt would have it; installing one makes
-    /// that repository the origin. Neither has one whose repository was
-    /// removed or no longer lists it, as the resolver has it
-    /// (`ResolutionSnapshot.origins`). A version built for another bootstrap
-    /// is never an update.
+    /// that repository the origin. If its repository was removed or no longer
+    /// lists it, every repository's newer version is on offer too, as the
+    /// resolver has it (`ResolutionSnapshot.origins`). A version built for
+    /// another bootstrap is an update only while `offersAdaptedUpdates` says
+    /// so: what converted once and works may not convert as well the next time.
     /// - Parameters:
     ///   - identity: identity in string
     ///   - current: current version
@@ -185,10 +190,25 @@ public struct PackageIndex: Sendable {
     }
 
     /// What of a repository's record is an update over `current`, nil when
-    /// nothing is. Judged on the versions built for this bootstrap: a
-    /// catalogue written before 5.0 may still hold another's.
+    /// nothing is. Judged on the versions that may be one, not on the
+    /// newest: a repository can offer a version built for this bootstrap
+    /// under a newer one an adapter would have to rewrite, which is an
+    /// update only with `offersAdaptedUpdates`, and then only once the
+    /// native ones are behind.
     public func updateOffer(in record: Package, over current: String) -> Package? {
-        record.update(over: current, device: AptEnvironment.current.deviceArchitecture)
+        record.update(
+            over: current,
+            device: AptEnvironment.current.deviceArchitecture,
+            accepted: updateArchitectures
+        )
+    }
+
+    /// What a version may be built for and be an update: the bootstrap's
+    /// own, and what an adapter rewrites only with `offersAdaptedUpdates`.
+    public var updateArchitectures: Set<String> {
+        offersAdaptedUpdates
+            ? AptEnvironment.current.installableArchitectures
+            : [AptEnvironment.current.deviceArchitecture]
     }
 
     /// search with virtual package identity that provided by package in return value

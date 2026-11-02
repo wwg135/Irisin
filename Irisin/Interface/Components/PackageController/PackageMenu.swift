@@ -123,7 +123,7 @@ enum PackageMenu {
 
     /// What the package offers now, in menu order.
     static func eligibleActions(for package: Package) -> [Item] {
-        let queued = PackageQueue.shared.isQueued(package.identity)
+        let queued = PackageQueue.shared.isShownQueued(package.identity)
         return allMenuActions.filter { action in
             !(queued && requestActions.contains(action.descriptor)) && action.eligibleForPerform(package)
         }
@@ -199,15 +199,28 @@ enum PackageMenu {
             preferring: origin?.repoRef
         ) ?? origin ?? package
     }
-
-    /// Every request in the app goes here: the change sheet shows what it
-    /// does to the queue and adds it. Returns once the sheet is on its way in.
-    static func enqueue(_ actions: [ResolutionAction], from host: UIViewController) async {
-        await QueueChangeController.show(.actions(actions), from: host)
-    }
 }
 
 extension PackageMenu {
+    /// Every install, update and removal in the app goes here. With
+    /// Lightweight Mode on it downloads, patches if the package needs it and
+    /// runs in a popup over the page, and a change the popup cannot take is
+    /// said in an alert. Otherwise the change sheet shows what it does to
+    /// the queue and adds it, returning once the sheet is on its way in.
+    static func install(
+        _ actions: [ResolutionAction],
+        notices: [String] = [],
+        from host: UIViewController
+    ) async {
+        guard QueueMode.isLightweight else {
+            await QueueChangeController.show(.actions(actions), from: host)
+            return
+        }
+        if let reason = await QuickInstallController.start(actions, notices: notices, from: host) {
+            host.presentNotice(title: "Error", message: reason)
+        }
+    }
+
     /// A package row's long press: the package page as the preview, and the
     /// page's own menu.
     static func contextMenu(

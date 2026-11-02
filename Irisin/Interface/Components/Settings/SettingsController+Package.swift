@@ -52,6 +52,7 @@ extension SettingsController {
                     self?.dispatchValueUpdate()
                 }
             ),
+            compatibilityUpdatesItem(),
             SettingsItem(
                 id: "package.systemRemoval",
                 icon: "exclamationmark.shield",
@@ -81,6 +82,37 @@ extension SettingsController {
         return items.compactMap(\.self)
     }
 
+    /// Whether a package installed in compatibility mode is offered its
+    /// newer versions, each converted again. Off until the user allows it,
+    /// and no row at all on a bootstrap nothing is converted for.
+    private func compatibilityUpdatesItem() -> SettingsItem? {
+        guard AptRepositoryBootstrap.installableArchitectures.count > 1 else { return nil }
+        return SettingsItem(
+            id: "package.compatibilityUpdates",
+            icon: "arrow.triangle.2.circlepath",
+            title: String(localized: "Compatibility Updates"),
+            kind: .toggle,
+            isOn: { PackageCenter.default.offersAdaptedUpdates },
+            setOn: { [weak self] isOn in
+                guard isOn else {
+                    PackageCenter.default.offersAdaptedUpdates = false
+                    return
+                }
+                self?.presentConfirmation(
+                    title: "Allow Compatibility Updates?",
+                    message: "An update to a package installed in compatibility mode is converted again. It may stop working and damage the system.",
+                    confirmTitle: "Allow",
+                    destructive: true
+                ) { [weak self] in
+                    PackageCenter.default.offersAdaptedUpdates = true
+                    self?.dispatchValueUpdate()
+                }
+                // the switch goes back until the confirmation says otherwise
+                self?.dispatchValueUpdate()
+            }
+        )
+    }
+
     /// Whether a change waits for the owner's Face ID, Touch ID, Optic ID
     /// or passcode. Turned either way only once the owner confirms, so the
     /// switch is no way around it; no row on a device with no passcode.
@@ -108,6 +140,17 @@ extension SettingsController {
     /// The files the app has fetched and keeps.
     func downloadItems() -> [SettingsItem] {
         [
+            SettingsItem(
+                id: "package.lightweightMode",
+                icon: "bolt",
+                title: String(localized: "Lightweight Mode"),
+                kind: .toggle,
+                isOn: { QueueMode.isLightweight },
+                setOn: { [weak self] isOn in
+                    QueueMode.isLightweight = isOn
+                    self?.dispatchValueUpdate()
+                }
+            ),
             SettingsItem(
                 id: "package.downloads",
                 icon: "tray.full",

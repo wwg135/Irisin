@@ -79,6 +79,8 @@ final class QueueController: UIViewController, UITableViewDelegate {
     /// a tap is waiting for them.
     private var watch: Task<Void, Never>?
     private var staging: Task<Void, Never>?
+    /// Patch is adapting the plan's files; the page follows nothing else meanwhile.
+    private var patching: Task<Void, Never>?
     /// A tapped row whose page is not pushed yet; a second tap waits for it.
     private var opening: Task<Void, Never>?
     /// Execute was tapped while files were still downloading: it
@@ -366,7 +368,9 @@ final class QueueController: UIViewController, UITableViewDelegate {
 
     /// How many packages the queue touches.
     static var queuedCount: Int {
-        (PackageQueue.shared.plan).map { $0.install.count + $0.remove.count } ?? 0
+        // Lightweight Mode uses the queue's state for its popup alone
+        guard !QueueMode.isLightweight else { return 0 }
+        return (PackageQueue.shared.plan).map { $0.install.count + $0.remove.count } ?? 0
     }
 
     /// `queuedCount` for a tab or a card; nil when none.
@@ -545,12 +549,19 @@ final class QueueController: UIViewController, UITableViewDelegate {
 
     /// Follows the plan's missing files; each row follows its own.
     private func follow(_ plan: ResolutionPlan) {
+        // Patch changes the queue as it goes; the page follows when it ends
+        guard patching == nil else { return }
         // one watch per plan: an earlier one waking later would stage again
         watch?.cancel()
         watch = nil
         let pending = plan.install.filter { $0.localFileURL == nil }
         guard !pending.isEmpty else {
+            guard PackageQueue.shared.unpatched.isEmpty else {
+                stage = .downloading
+                return patch()
+            }
             stage = .ready
+            if committed { run(plan) }
             return
         }
         stage = .downloading
@@ -574,11 +585,32 @@ final class QueueController: UIViewController, UITableViewDelegate {
                 reload()
                 return
             }
+            if !PackageQueue.shared.unpatched.isEmpty {
+                return patch()
+            }
             if committed {
                 run(plan)
             } else {
                 stage = .ready
             }
+        }
+    }
+
+    /// Adapts the files built for another bootstrap before anything is
+    /// staged. The queue may be solved again by it; `reload` then follows
+    /// the plan it ends with.
+    private func patch() {
+        patching = Task { [weak self] in
+            let result = await PackageQueue.shared.patch()
+            guard let self else { return }
+            patching = nil
+            if case let .failure(reason) = result {
+                Dog.shared.join("Queue", "patch failed: \(reason.message)", level: .error)
+                failure = reason.message
+                committed = false
+                stage = .downloadFailed
+            }
+            reload()
         }
     }
 

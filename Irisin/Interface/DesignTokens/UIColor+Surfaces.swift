@@ -40,6 +40,10 @@ extension UIColor {
     /// both modes and at either level.
     static let sheetBackground = UIColor.secondarySystemBackground
 
+    /// The dim behind a popup centered over a page (`QuickInstallController`):
+    /// black in both modes, so the page recedes under it.
+    static let popupScrim = UIColor.black.withAlphaComponent(0.4)
+
     /// The shadow under a bar that floats over a page (`QueueBarView` before
     /// iOS 26, where glass casts its own): black in both modes, faint enough
     /// to lift a material capsule off a white list and lost on a dark one.
