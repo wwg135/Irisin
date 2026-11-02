@@ -3,6 +3,7 @@
 //  Irisin
 //
 
+import AptRepository
 import Foundation
 
 nonisolated extension Notification.Name {
