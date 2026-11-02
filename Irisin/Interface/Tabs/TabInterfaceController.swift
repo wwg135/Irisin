@@ -66,6 +66,7 @@ class TabInterfaceController: UITabBarController {
 
         NotificationCenter.default.publisher(for: .PackageQueueChanged)
             .receive(on: DispatchQueue.main)
+            .merge(with: NotificationCenter.default.publisher(for: .QueueModeChanged))
             .sink { [weak self] _ in self?.updateQueueTab() }
             .store(in: &subscriptions)
 
@@ -99,7 +100,7 @@ class TabInterfaceController: UITabBarController {
     /// `UITab.isHidden` only hides a tab from the sidebar, so the tab
     /// leaves the list instead.
     private func updateQueueTab(animated: Bool = true) {
-        let shown = PackageQueue.shared.plan != nil || selectedViewController === queue
+        let shown = (PackageQueue.shared.plan != nil && !QueueMode.isLightweight) || selectedViewController === queue
         if #available(iOS 18.0, *) {
             let every = everyTab.compactMap { $0 as? UITab }
             guard tabs.contains(where: { $0.identifier == "queue" }) != shown else { return }

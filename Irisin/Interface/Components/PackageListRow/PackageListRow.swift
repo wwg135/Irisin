@@ -307,7 +307,7 @@ class PackageListRow: UIView {
     /// in the corner: an arrow into the queue for an install, a cross for a
     /// removal. Nothing when the queue leaves it.
     static func drawQueueBadge(on indicator: UIImageView, for package: Package) {
-        guard let plan = PackageQueue.shared.plan else { return }
+        guard !QueueMode.isLightweight, let plan = PackageQueue.shared.plan else { return }
         // a reinstall or an update is in both lists, and it is an install
         if plan.install.contains(where: { $0.identity == package.identity }) {
             indicator.tintColor = .queuedInstall

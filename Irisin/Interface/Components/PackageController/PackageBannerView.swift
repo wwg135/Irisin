@@ -190,7 +190,7 @@ class PackageBannerView: UIView {
         if !package.isSupportedOnDevice, package.localFileURL == nil {
             return String(localized: "Unsupported").uppercased()
         }
-        if PackageQueue.shared.isQueued(package.identity) {
+        if !QueueMode.isLightweight, PackageQueue.shared.isQueued(package.identity) {
             return (obtainQuickAction()?.descriptor.describe() ?? String(localized: "Open Queue")).uppercased()
         }
         if PackageCenter

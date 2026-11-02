@@ -368,7 +368,9 @@ final class QueueController: UIViewController, UITableViewDelegate {
 
     /// How many packages the queue touches.
     static var queuedCount: Int {
-        (PackageQueue.shared.plan).map { $0.install.count + $0.remove.count } ?? 0
+        // Lightweight Mode uses the queue's state for its popup alone
+        guard !QueueMode.isLightweight else { return 0 }
+        return (PackageQueue.shared.plan).map { $0.install.count + $0.remove.count } ?? 0
     }
 
     /// `queuedCount` for a tab or a card; nil when none.
