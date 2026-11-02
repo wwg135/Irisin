@@ -104,6 +104,9 @@ private final class PackageProgressRow: UIView {
         super.init(frame: .zero)
         let title = UIStackView(arrangedSubviews: [nameLabel, statusLabel])
         title.spacing = 8
+        let buttons = UIStackView(arrangedSubviews: [cancelButton, primaryButton])
+        buttons.spacing = 12
+        buttons.distribution = .fillEqually
         let stack = UIStackView(arrangedSubviews: [title, bar])
         stack.axis = .vertical
         stack.spacing = 4
@@ -285,7 +288,7 @@ final class QuickInstallController: UIViewController {
         view.backgroundColor = .popupScrim
         nameLabel.text = packageName
         let stack = UIStackView(arrangedSubviews: [
-            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, primaryButton, cancelButton, logButton,
+            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttons, logButton,
         ])
         stack.axis = .vertical
         stack.alignment = .fill
