@@ -191,9 +191,6 @@ final class QuickInstallController: UIViewController {
         $0.addAction(UIAction { [weak self] _ in self?.cancelTapped() }, for: .touchUpInside)
     }
 
-    /// The space between Cancel and the primary button, there only with both.
-    private let buttonGap = UIView()
-
     private lazy var logButton = UIButton(type: .system).then {
         var configuration = UIButton.Configuration.plain()
         configuration.title = String(localized: "View Full Log")
@@ -287,17 +284,11 @@ final class QuickInstallController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .popupScrim
         nameLabel.text = packageName
-        // the buttons are as wide as their titles, and the space before,
-        // between and after them is three equal parts of the row
-        let gaps = [UIView(), buttonGap, UIView()]
-        let buttons = UIStackView(arrangedSubviews: [gaps[0], cancelButton, gaps[1], primaryButton, gaps[2]])
-        buttons.alignment = .center
-        buttons.distribution = .fill
-        gaps[1].snp.makeConstraints { $0.width.equalTo(gaps[0]) }
-        gaps[2].snp.makeConstraints { $0.width.equalTo(gaps[0]) }
-        let buttonRow = buttons
+        let buttons = UIStackView(arrangedSubviews: [cancelButton, primaryButton])
+        buttons.spacing = 12
+        buttons.distribution = .fillEqually
         let stack = UIStackView(arrangedSubviews: [
-            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttonRow, logButton,
+            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttons, logButton,
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -308,13 +299,9 @@ final class QuickInstallController: UIViewController {
             x.center.equalTo(view.safeAreaLayoutGuide)
             x.leading.greaterThanOrEqualTo(view.safeAreaLayoutGuide).offset(24)
             x.trailing.lessThanOrEqualTo(view.safeAreaLayoutGuide).offset(-24)
-            x.width.equalTo(360).priority(999)
+            x.width.equalTo(360).priority(750)
         }
         stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
-        for button in [cancelButton, primaryButton] {
-            button.setContentHuggingPriority(.required, for: .horizontal)
-            button.setContentCompressionResistancePriority(.required, for: .horizontal)
-        }
         primaryButton.snp.makeConstraints { $0.height.equalTo(48) }
         cancelButton.snp.makeConstraints { $0.height.equalTo(48) }
         rowsScroll.addSubview(rowsStack)
@@ -508,7 +495,6 @@ final class QuickInstallController: UIViewController {
         logButton.isHidden = true
         cancelButton.isHidden = true
         primaryButton.isEnabled = true
-        defer { buttonGap.isHidden = cancelButton.isHidden }
         // the question before the run is a note between the name and the
         // buttons, a step smaller than the status that follows it
         if case .confirming = next {
