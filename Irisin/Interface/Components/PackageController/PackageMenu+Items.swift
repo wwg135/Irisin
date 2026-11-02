@@ -16,14 +16,14 @@ extension PackageMenu {
                 await QueueChangeController.show(.withdraw(package.identity), from: host)
             },
             eligibleForPerform: { package in
-                PackageQueue.shared.isQueued(package.identity)
+                PackageQueue.shared.isShownQueued(package.identity)
             }
         ),
         .init(
             descriptor: .replace,
             block: resolveInstallRequest,
             eligibleForPerform: { package in
-                guard let queued = PackageQueue.shared.queuedPackage(of: package.identity),
+                guard let queued = PackageQueue.shared.shownQueuedPackage(of: package.identity),
                       package.isSupportedOnDevice || package.localFileURL != nil,
                       package.localFileURL != nil || package.obtainDownloadLink() != PackageBadUrl,
                       let version = package.latestVersion,

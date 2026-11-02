@@ -8,6 +8,7 @@
 
 import AptRepository
 import Combine
+import SnapKit
 import UIKit
 
 class SidebarCards: UIView {
@@ -31,6 +32,8 @@ class SidebarCards: UIView {
         symbol: "tray.full.fill",
         defaultSelected: false
     )
+
+    private var installedLeading: Constraint?
 
     private let installedCard = SidebarCard(
         text: String(localized: "Installed"),
@@ -80,7 +83,7 @@ class SidebarCards: UIView {
         installedCard.cardClosure = { [weak self] in self?.open(.installed) }
         installedCard.snp.makeConstraints { x in
             x.top.equalTo(self.snp.centerY).offset(8)
-            x.leading.equalTo(self.snp.centerX).offset(8)
+            installedLeading = x.leading.equalTo(self.snp.centerX).offset(8).constraint
             x.bottom.equalTo(self.snp.bottom).offset(-8)
             x.trailing.equalTo(self.snp.trailing)
         }
@@ -91,6 +94,24 @@ class SidebarCards: UIView {
             .prepend(QueueController.badge)
             .removeDuplicates()
             .sink { [weak self] badge in self?.queueCard.badgeText = badge ?? "" } // empty for animation
+            .store(in: &subscriptions)
+
+        // Lightweight Mode has no queue: the Installed card takes its row
+        NotificationCenter.default.publisher(for: .QueueModeChanged)
+            .receive(on: DispatchQueue.main)
+            .map { _ in QueueMode.isLightweight }
+            .prepend(QueueMode.isLightweight)
+            .removeDuplicates()
+            .sink { [weak self] lightweight in
+                guard let self else { return }
+                queueCard.isHidden = lightweight
+                installedLeading?.deactivate()
+                installedCard.snp.makeConstraints { x in
+                    installedLeading = (lightweight
+                        ? x.leading.equalTo(self.snp.leading)
+                        : x.leading.equalTo(self.snp.centerX).offset(8)).constraint
+                }
+            }
             .store(in: &subscriptions)
 
         NotificationCenter.default.publisher(for: PackageCenter.packageRecordChanged)

@@ -70,7 +70,7 @@ extension PackageMenu {
         if !removes.isEmpty {
             return (.actions(removes), leftOut)
         }
-        if rows.count == 1, let row = rows.first, PackageQueue.shared.isQueued(row.identity) {
+        if rows.count == 1, let row = rows.first, PackageQueue.shared.isShownQueued(row.identity) {
             return (.withdraw(row.identity), [])
         }
         return (nil, leftOut)
@@ -83,6 +83,6 @@ extension PackageMenu {
         if rows.contains(where: { eligibleActions(for: requestPackage(for: $0)).contains { $0.descriptor == .remove } }) {
             return true
         }
-        return rows.count == 1 && PackageQueue.shared.isQueued(rows[0].identity)
+        return rows.count == 1 && PackageQueue.shared.isShownQueued(rows[0].identity)
     }
 }

@@ -30,3 +30,16 @@ enum QueueMode {
         }
     }
 }
+
+extension PackageQueue {
+    /// `isQueued`, as the interface shows it: Lightweight Mode keeps the
+    /// queue's state for its popup alone, so nothing is queued to the user.
+    func isShownQueued(_ identity: String) -> Bool {
+        !QueueMode.isLightweight && isQueued(identity)
+    }
+
+    /// `queuedPackage(of:)`, as the interface shows it.
+    func shownQueuedPackage(of identity: String) -> Package? {
+        QueueMode.isLightweight ? nil : queuedPackage(of: identity)
+    }
+}
