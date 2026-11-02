@@ -133,7 +133,7 @@ private final class PackageProgressRow: UIView {
 /// a change this popup cannot take is not started, and `start` explains why.
 final class QuickInstallController: UIViewController {
     private enum Phase {
-        case downloading, preparing, installing
+        case confirming, downloading, preparing, installing
         case finished(OperationMonitor.Ending)
         case failed(String)
     }
@@ -153,7 +153,7 @@ final class QuickInstallController: UIViewController {
         $0.isHidden = true
     }
 
-    private var phase = Phase.downloading
+    private var phase = Phase.confirming
     private var work: Task<Void, Never>?
     private var monitor: OperationMonitor?
     private var subscriptions = Set<AnyCancellable>()
@@ -181,6 +181,14 @@ final class QuickInstallController: UIViewController {
 
     private lazy var primaryButton = UIButton(type: .system).then {
         $0.addAction(UIAction { [weak self] _ in self?.primaryTapped() }, for: .touchUpInside)
+    }
+
+    private lazy var cancelButton = UIButton(type: .system).then {
+        var configuration = UIButton.Configuration.tinted()
+        configuration.cornerStyle = .large
+        configuration.title = String(localized: "Cancel")
+        $0.configuration = configuration
+        $0.addAction(UIAction { [weak self] _ in self?.cancelTapped() }, for: .touchUpInside)
     }
 
     private lazy var logButton = UIButton(type: .system).then {
@@ -277,7 +285,7 @@ final class QuickInstallController: UIViewController {
         view.backgroundColor = .popupScrim
         nameLabel.text = packageName
         let stack = UIStackView(arrangedSubviews: [
-            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, primaryButton, logButton,
+            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, primaryButton, cancelButton, logButton,
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -292,6 +300,7 @@ final class QuickInstallController: UIViewController {
         }
         stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
         primaryButton.snp.makeConstraints { $0.height.equalTo(48) }
+        cancelButton.snp.makeConstraints { $0.height.equalTo(48) }
         rowsScroll.addSubview(rowsStack)
         rowsStack.snp.makeConstraints {
             $0.edges.equalToSuperview()
@@ -302,8 +311,17 @@ final class QuickInstallController: UIViewController {
         natural.isActive = true
         rowsScroll.heightAnchor.constraint(lessThanOrEqualToConstant: 240).isActive = true
         rebuildRows()
+        apply(.confirming)
+    }
+
+    private func startWork() {
         apply(plan.install.contains { $0.localFileURL == nil } ? .downloading : .preparing)
         work = Task { [weak self] in await self?.run() }
+    }
+
+    private func cancelTapped() {
+        PackageQueue.shared.clear()
+        close()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -472,8 +490,16 @@ final class QuickInstallController: UIViewController {
         var configuration = UIButton.Configuration.filled()
         configuration.cornerStyle = .large
         logButton.isHidden = true
+        cancelButton.isHidden = true
+        primaryButton.isEnabled = true
         switch next {
+        case .confirming:
+            statusLabel.isHidden = true
+            progressIndicator.isHidden = true
+            cancelButton.isHidden = false
+            configuration.title = String(localized: "Confirm")
         case .downloading:
+            statusLabel.isHidden = false
             statusLabel.text = String(localized: "Downloading…")
             progressIndicator.isHidden = false
             progressIndicator.progressTintColor = .buttonNormal
@@ -481,6 +507,7 @@ final class QuickInstallController: UIViewController {
             configuration = .tinted()
             configuration.title = String(localized: "Cancel")
         case .preparing:
+            statusLabel.isHidden = false
             statusLabel.text = String(localized: "Preparing…")
             progressIndicator.isHidden = true
             progressIndicator.progressTintColor = .buttonNormal
@@ -518,6 +545,8 @@ final class QuickInstallController: UIViewController {
 
     private func primaryTapped() {
         switch phase {
+        case .confirming:
+            startWork()
         case .downloading:
             // takes the change back: nothing was installed
             work?.cancel()
