@@ -286,7 +286,8 @@ final class QuickInstallController: UIViewController {
         nameLabel.text = packageName
         let buttons = UIStackView(arrangedSubviews: [cancelButton, primaryButton])
         buttons.spacing = 12
-        buttons.distribution = .fillEqually
+        buttons.alignment = .center
+        buttons.distribution = .fill
         let stack = UIStackView(arrangedSubviews: [
             nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttons, logButton,
         ])
@@ -302,6 +303,10 @@ final class QuickInstallController: UIViewController {
             x.width.equalTo(360).priority(750)
         }
         stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
+        for button in [cancelButton, primaryButton] {
+            button.setContentHuggingPriority(.required, for: .horizontal)
+            button.setContentCompressionResistancePriority(.required, for: .horizontal)
+        }
         primaryButton.snp.makeConstraints { $0.height.equalTo(48) }
         cancelButton.snp.makeConstraints { $0.height.equalTo(48) }
         rowsScroll.addSubview(rowsStack)
