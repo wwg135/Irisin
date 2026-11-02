@@ -104,6 +104,38 @@ extension RepositoriesController: UITableViewDelegate {
         return UISwipeActionsConfiguration(actions: [pinItem, shareItem])
     }
 
+    func tableView(
+        _ tableView: UITableView,
+        contextMenuConfigurationForRowAt indexPath: IndexPath,
+        point _: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        guard !tableView.isEditing, let url = url(at: indexPath) else { return nil }
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            UIMenu(children: [
+                UIMenu(options: .displayInline, children: [
+                    UIAction(
+                        title: String(localized: "Refresh"),
+                        image: UIImage(systemName: "arrow.clockwise")
+                    ) { _ in self?.refreshRepository(url) },
+                    UIAction(
+                        title: String(localized: "Share"),
+                        image: UIImage(systemName: "square.and.arrow.up")
+                    ) { _ in self?.share(url, from: tableView.cellForRow(at: indexPath)) },
+                    ExportFile.exportRepositoryAction(
+                        url,
+                        host: { self },
+                        anchor: { tableView.cellForRow(at: indexPath).map { PopoverAnchor($0) } }
+                    ),
+                ]),
+                UIAction(
+                    title: String(localized: "Delete"),
+                    image: UIImage(systemName: "trash"),
+                    attributes: .destructive
+                ) { _ in self?.delete([url]) },
+            ])
+        }
+    }
+
     // MARK: - Header views for clearer card groups
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {

@@ -48,8 +48,7 @@ class RepositoriesNavigator: UINavigationController {
 class RepositoriesController: UIViewController {
     private var subscriptions = Set<AnyCancellable>()
 
-    // Use insetGrouped to render sections as card-like groups
-    let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    let tableView = UITableView(frame: .zero, style: .plain)
     let refreshControl = SettlingRefreshControl()
     private let cellIdentity = "repository"
 
@@ -129,6 +128,7 @@ class RepositoriesController: UIViewController {
             .dequeueReusableCell(withIdentifier: cellIdentity, for: indexPath)
             as! RepositoryTableCell
         cell.backgroundColor = .clear
+        cell.usesCard = QueueMode.isLightweight
         cell.contentInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         switch row {
         case .none: cell.setNoRepoAvailable()
