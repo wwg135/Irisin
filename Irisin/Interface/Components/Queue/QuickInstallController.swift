@@ -288,8 +288,17 @@ final class QuickInstallController: UIViewController {
         buttons.spacing = 12
         buttons.alignment = .center
         buttons.distribution = .fill
+        // the buttons are as wide as their titles and sit in the middle of a
+        // row as wide as the card
+        let buttonRow = UIView()
+        buttonRow.addSubview(buttons)
+        buttons.snp.makeConstraints { x in
+            x.top.bottom.centerX.equalToSuperview()
+            x.leading.greaterThanOrEqualToSuperview()
+            x.trailing.lessThanOrEqualToSuperview()
+        }
         let stack = UIStackView(arrangedSubviews: [
-            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttons, logButton,
+            nameLabel, statusLabel, noticesLabel, rowsScroll, progressIndicator, buttonRow, logButton,
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -300,7 +309,7 @@ final class QuickInstallController: UIViewController {
             x.center.equalTo(view.safeAreaLayoutGuide)
             x.leading.greaterThanOrEqualTo(view.safeAreaLayoutGuide).offset(24)
             x.trailing.lessThanOrEqualTo(view.safeAreaLayoutGuide).offset(-24)
-            x.width.equalTo(360).priority(750)
+            x.width.equalTo(360).priority(999)
         }
         stack.snp.makeConstraints { $0.edges.equalToSuperview().inset(24) }
         for button in [cancelButton, primaryButton] {
